@@ -1,0 +1,11 @@
+{
+	"version" : "0.1.0",
+	"name" : "class-loading",
+	"description" : "Java class file parsing and manipulation",
+	"homepage" : "https://github.com/TeamworkGuy2/ClassLoading",
+	"license" : "MIT",
+	"main" : "./bin/class_loading.jar",
+	"dependencies" : {
+		"ecj-4.4M2" : "*"
+	}
+}

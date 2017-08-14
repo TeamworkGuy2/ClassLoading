@@ -4,7 +4,13 @@ This project does its best to adhere to [Semantic Versioning](http://semver.org/
 
 
 --------
-### [0.2.0](N/A) - 2017-08-13
+### [0.2.1](N/A) - 2017-08-14
+#### Changed
+* Forgot to update jar file
+
+
+--------
+### [0.2.0](https://github.com/TeamworkGuy2/ClassLoading/commit/604a82930aaf0e24f129f31e2e946aded5e19931) - 2017-08-14
 #### Changed
 * Cleaned up unnecessary twg2.jbcm.opcode package classes
 * Renamed twg2.jbcm.modify.IndexChange -> IndexChanger

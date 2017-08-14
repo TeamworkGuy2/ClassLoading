@@ -4,7 +4,7 @@ package twg2.jbcm.modify;
  * @author TeamworkGuy2
  * @since 2014-4-20
  */
-public interface OpcodeChangeCpIndex {
+public interface CpIndexChanger {
 
 	/** Performs this operation on the given argument.
 	 * @param code the array of code instructions

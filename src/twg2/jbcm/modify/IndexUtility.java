@@ -1,18 +1,18 @@
 package twg2.jbcm.modify;
 
-/** Helper methods for {@link IndexChange}
+/** Helper methods for {@link IndexChanger}
  * @author TeamworkGuy2
  * @since 2014-4-21
  */
 public class IndexUtility {
 
-	/** Call {@link IndexChange#changeCpIndex(short, short)} on each object in the specified array
-	 * @param objs the array of objects to call {@link IndexChange#changeCpIndex(short, short)} on
+	/** Call {@link IndexChanger#changeCpIndex(short, short)} on each object in the specified array
+	 * @param objs the array of objects to call {@link IndexChanger#changeCpIndex(short, short)} on
 	 * @param oldIndex the old index to look for
 	 * @param newIndex the new index to replace matching old indices with
 	 */
-	public static final void indexChange(IndexChange[] objs, short oldIndex, short newIndex) {
-		for(IndexChange obj : objs) {
+	public static final void indexChange(IndexChanger[] objs, short oldIndex, short newIndex) {
+		for(IndexChanger obj : objs) {
 			obj.changeCpIndex(oldIndex, newIndex);
 		}
 	}
@@ -32,12 +32,12 @@ public class IndexUtility {
 	}
 
 
-	/** Call {@link IndexChange#changeCpIndex(short, short)} on the specified object
-	 * @param obj the object to call {@link IndexChange#changeCpIndex(short, short)} on
+	/** Call {@link IndexChanger#changeCpIndex(short, short)} on the specified object
+	 * @param obj the object to call {@link IndexChanger#changeCpIndex(short, short)} on
 	 * @param oldIndex the old index to look for
 	 * @param newIndex the new index to replace matching old indices with
 	 */
-	public static final void indexChange(IndexChange obj, short oldIndex, short newIndex) {
+	public static final void indexChange(IndexChanger obj, short oldIndex, short newIndex) {
 		if(obj != null) {
 			obj.changeCpIndex(oldIndex, newIndex);
 		}

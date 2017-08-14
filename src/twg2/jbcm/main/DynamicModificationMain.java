@@ -1,9 +1,7 @@
 package twg2.jbcm.main;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,10 +44,7 @@ public class DynamicModificationMain {
 		String dynamicClassName = "DynamicTest";
 
 		// TODO USES SimpleInterfaceImpl.java, don't delete SimpleInterfaceImpl.java
-		ClassFile classFile = new ClassFile();
-		DataInputStream in = new DataInputStream(new FileInputStream(file));
-		classFile.readData(in);
-		in.close();
+		ClassFile classFile = ClassFile.load(file);
 
 		//classFile.print();
 
@@ -97,17 +92,12 @@ public class DynamicModificationMain {
 		String dynamicSubFolder = "load";
 		String dynamicClassName = "ListInterfaceTest";
 
-		ClassFile listImplClass = new ClassFile();
-		DataInputStream in = new DataInputStream(new FileInputStream(new File("bin/twg2/jbcm/dynamicModification/ListInterfaceAddonImpl.class")));
-		listImplClass.readData(in);
-		in.close();
+		ClassFile listImplClass = ClassFile.load(new File("bin/twg2/jbcm/dynamicModification/ListInterfaceAddonImpl.class"));
 		listImplClass.print(System.out);
 
 		System.out.println("\n\n");
 
-		in = new DataInputStream(new FileInputStream(new File("bin/twg2/jbcm/dynamicModification/ListNotInterfaceAddon.class")));
-		listImplClass.readData(in);
-		in.close();
+		listImplClass = ClassFile.load(new File("bin/twg2/jbcm/dynamicModification/ListNotInterfaceAddon.class"));
 
 		listImplClass.rename(fileClasspath.replace('.', '/') + '/' + dynamicSubFolder + '/' + dynamicClassName);
 

@@ -9,9 +9,7 @@ import twg2.jbcm.classFormat.attributes.Code_Attribute;
  */
 public interface OffsetAttribute extends Code_Attribute {
 
-	/**
-	 * @return the {@link AttributeOffsetFunction} that can be used to modify
-	 * this attribute's offsets
+	/** @return an {@link AttributeOffsetFunction} that can be used to modify this attribute's offsets
 	 */
 	public AttributeOffsetFunction getAttributeOffsetModifier();
 

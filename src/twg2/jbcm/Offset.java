@@ -1,6 +1,6 @@
 package twg2.jbcm;
 
-import twg2.jbcm.modify.OpcodeChangeOffset;
+import twg2.jbcm.modify.CodeOffsetChanger;
 
 /** An interface that is implemented by attributes or instructions that
  * have an offset value in their metadata or opcodes.
@@ -9,6 +9,6 @@ import twg2.jbcm.modify.OpcodeChangeOffset;
  */
 public interface Offset {
 
-	public OpcodeChangeOffset getOffsetModifier();
+	public CodeOffsetChanger getOffsetModifier();
 
 }

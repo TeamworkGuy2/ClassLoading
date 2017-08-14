@@ -7,8 +7,9 @@ import java.net.URL;
 import java.util.Arrays;
 
 import twg2.jbcm.modify.ByteCodeConsumer;
-import twg2.jbcm.modify.OpcodeChangeCpIndex;
-import twg2.jbcm.modify.OpcodeChangeOffset;
+import twg2.jbcm.modify.ChangeCpIndex;
+import twg2.jbcm.modify.CpIndexChanger;
+import twg2.jbcm.modify.CodeOffsetChanger;
 
 /**
  * @author TeamworkGuy2
@@ -16,7 +17,7 @@ import twg2.jbcm.modify.OpcodeChangeOffset;
  */
 public final class IoUtility {
 
-	public static final OpcodeChangeCpIndex EMPTY_OPCODE_CP_INDEX = new OpcodeChangeCpIndex() {
+	public static final CpIndexChanger EMPTY_OPCODE_CP_INDEX = new CpIndexChanger() {
 		@Override public void shiftIndex(byte[] code, int location, int offset) {
 		}
 
@@ -24,7 +25,7 @@ public final class IoUtility {
 		public void changeCpIndexIf(byte[] code, int location, int currentIndex, int newIndex) {
 		}
 	};
-	public static final OpcodeChangeOffset EMPTY_OPCODE_OFFSET = new OpcodeChangeOffset() {
+	public static final CodeOffsetChanger EMPTY_OPCODE_OFFSET = new CodeOffsetChanger() {
 		@Override public void shiftIndex(byte[] code, int location, int offset) {
 		}
 	};
@@ -122,12 +123,11 @@ public final class IoUtility {
 	 * @param opcode the opcode to look for in the code
 	 * @param offset the offset to add to offset values
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
-	 * @param offsetLen the length of the offset value (2 for a short, 4 for an int)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	private static final int shift1Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
+	public static final int shift1Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
 		byte op = code[codeOffset];
 		if(op == opcode) {
 			codeOffset+=offsetOffset;
@@ -154,12 +154,11 @@ public final class IoUtility {
 	 * @param opcode the opcode to look for in the code
 	 * @param offset the offset to add to offset values
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
-	 * @param offsetLen the length of the offset value (2 for a short, 4 for an int)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	private static final int shift2Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
+	public static final int shift2Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
 		byte op = code[codeOffset];
 		if(op == opcode) {
 			codeOffset+=offsetOffset;
@@ -186,12 +185,11 @@ public final class IoUtility {
 	 * @param opcode the opcode to look for in the code
 	 * @param offset the offset to add to offset values
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
-	 * @param offsetLen the length of the offset value (2 for a short, 4 for an int)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	private static final int shift4Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
+	public static final int shift4Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
 		byte op = code[codeOffset];
 		if(op == opcode) {
 			codeOffset+=offsetOffset;
@@ -253,15 +251,15 @@ public final class IoUtility {
 	}
 
 
-	/** A default implementation of {@link OpcodeChangeOffset}.
+	/** A default implementation of {@link CodeOffsetChanger}.
 	 * The {@link #accept(byte[], int, int)} in this implementation simply calls {@code IoUtility.shiftOffset(...)}
-	 * using the parameters from the constructor and the {@link OpcodeChangeOffset#accept(byte[], int, int)} method.
+	 * using the parameters from the constructor and the {@link CodeOffsetChanger#accept(byte[], int, int)} method.
 	 * @author TeamworkGuy2
 	 * @since 2014-419
 	 */
 	/*
-	public static class ChangeOffsetDefault implements OpcodeChangeOffset {
-		public static final OpcodeChangeOffset EMPTY = new OpcodeChangeOffset() {
+	public static class ChangeOffsetDefault implements CodeOffsetChanger {
+		public static final CodeOffsetChanger EMPTY = new CodeOffsetChanger() {
 			@Override public void accept(byte[] code, int location, int offset) {
 			}
 		};
@@ -302,81 +300,17 @@ public final class IoUtility {
 	*/
 
 
-	/** A default implementation of {@link OpcodeChangeCpIndex}.
-	 * The {@link #shiftIndex(byte[], int, int)} method calls {@code IoUtility.shiftOffset(...)}
-	 * using the parameters from this object's constructor and the {@code shiftCpIndex} method call.
-	 * @author TeamworkGuy2
-	 * @since 2014-4-20
-	 */
-	public static class ChangeCpIndex implements OpcodeChangeCpIndex, OpcodeChangeOffset {
-		private final int opcode;
-		private final int offsetOffset;
-		private final int offsetLen;
-
-		public ChangeCpIndex(int opcode, int offsetOffset, int offsetLen) {
-			if(offsetLen != 1 && offsetLen != 2 && offsetLen != 4) {
-				throw new IllegalArgumentException("cannot shift offsets values that are not 1, 2, or 4 bytes long: " + offsetLen);
-			}
-			this.opcode = opcode;
-			this.offsetOffset = offsetOffset;
-			this.offsetLen = offsetLen;
-		}
-
-		@Override
-		public void shiftIndex(byte[] code, int location, int offset) {
-			if(offsetLen == 2) {
-				IoUtility.shift2Offset(opcode, offset, offsetOffset, code, location);
-			}
-			else if(offsetLen == 4) {
-				IoUtility.shift4Offset(opcode, offset, offsetOffset, code, location);
-			}
-			else if(offsetLen == 1) {
-				IoUtility.shift1Offset(opcode, offset, offsetOffset, code, location);
-			}
-			else {
-				throw new IllegalStateException("offset length must be 1, 2, or 4");
-			}
-		}
-
-		@Override
-		public void changeCpIndexIf(byte[] code, int location, int currentIndex, int newIndex) {
-			location+=offsetOffset;
-			if(offsetLen == 2) {
-				short index = IoUtility.readShort(code, location);
-				if(index == currentIndex) {
-					IoUtility.writeShort((short)newIndex, code, location);
-				}
-			}
-			else if(offsetLen == 4) {
-				int index = IoUtility.readInt(code, location);
-				if(index == currentIndex) {
-					IoUtility.writeInt(newIndex, code, location);
-				}
-			}
-			else if(offsetLen == 1) {
-				byte index = code[location];
-				if(index == currentIndex) {
-					code[location] = (byte)newIndex;
-				}
-			}
-			else {
-				throw new IllegalStateException("offset length must be 1, 2, or 4");
-			}
-		}
-	}
-
-
-	public static OpcodeChangeCpIndex cpIndex(int opcode, int offset, int len) {
+	public static CpIndexChanger cpIndex(int opcode, int offset, int len) {
 		return new ChangeCpIndex(opcode, offset, len);
 	}
 
 
-	public static OpcodeChangeOffset offsetModifier(int opcode, int offset, int len) {
+	public static CodeOffsetChanger offsetModifier(int opcode, int offset, int len) {
 		return new ChangeCpIndex(opcode, offset, len);
 	}
 
 
-	public static final OpcodeChangeOffset TableswitchOffsetModifier = new OpcodeChangeOffset() {
+	public static final CodeOffsetChanger TableswitchOffsetModifier = new CodeOffsetChanger() {
 		/** Add an offset to all of the tableswitch instructions in the
 		 * specified chunk of code
 		 * @param offset the offset to adjust all tableswitch offsets by.
@@ -395,15 +329,15 @@ public final class IoUtility {
 				int defaultOffset = IoUtility.readInt(code, location);
 				defaultOffset += offset;
 				IoUtility.writeInt(defaultOffset, code, location);
-				location+=4;
+				location += 4;
 				// low
 				int low = IoUtility.readInt(code, location);
-				location+=4;
+				location += 4;
 				// high
 				int high = IoUtility.readInt(code, location);
-				location+=4;
+				location += 4;
 				// For each jump-offset 32bit value
-				for(int ii = 0; ii < (high-low+1); ii++, location+=4) {
+				for(int ii = 0; ii < (high-low+1); ii++, location += 4) {
 					int matchOffset = IoUtility.readInt(code, location);
 					matchOffset += offset;
 					IoUtility.writeInt(matchOffset, code, location);
@@ -416,7 +350,7 @@ public final class IoUtility {
 	};
 
 
-	public static final OpcodeChangeOffset LookupswitchOffsetModifier = new OpcodeChangeOffset() {
+	public static final CodeOffsetChanger LookupswitchOffsetModifier = new CodeOffsetChanger() {
 		/** Add an offset to all of the lookupswitch instructions in the
 		 * specified chunk of code
 		 * @param offset the offset to adjust all lookupswitch offsets by.
@@ -435,15 +369,15 @@ public final class IoUtility {
 				int defaultOffset = IoUtility.readInt(code, location);
 				defaultOffset += offset;
 				IoUtility.writeInt(defaultOffset, code, location);
-				location+=4;
+				location += 4;
 				// Number of pairs
 				int npairs = IoUtility.readInt(code, location);
-				location+=4;
+				location += 4;
 				// For each pair of match-offset 32bit values
-				for(int ii = 0; ii < npairs; ii++, location+=8) {
-					int matchOffset = IoUtility.readInt(code, location+4);
+				for(int ii = 0; ii < npairs; ii++, location += 8) {
+					int matchOffset = IoUtility.readInt(code, location + 4);
 					matchOffset += offset;
-					IoUtility.writeInt(matchOffset, code, location+4);
+					IoUtility.writeInt(matchOffset, code, location + 4);
 				}
 			}
 			else {

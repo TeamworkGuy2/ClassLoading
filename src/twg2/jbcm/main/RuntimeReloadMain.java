@@ -52,7 +52,7 @@ public class RuntimeReloadMain implements Runnable {
 
 		// Loop to process class loading choices
 		while(doLoop) {
-			System.out.print("\nLoad next class (a=Reload.main(), b=Test.main(), c=overwrite-call-RuntimeReloadMain.main(), i=compare, z=exit): ");
+			System.out.print("Load next class (a=Reload.main(), b=Test.main(), c=overwrite-call-RuntimeReloadMain.main(), i=compare, z=exit): ");
 			Thread t = null;
 			try {
 				choice = (byte)input.nextLine().charAt(0);
@@ -103,7 +103,6 @@ public class RuntimeReloadMain implements Runnable {
 	}
 
 
-
 	/** Load the specified classes over and over for testing purposes.
 	 * Trying to test if an application running an instance of this class can reload a newer version of this class
 	 * and continue running normally without needing to restart
@@ -130,13 +129,13 @@ public class RuntimeReloadMain implements Runnable {
 
 
 	/** Call a method reflexively
-	 * @param classNameToLoad the name of the class to containing the method
+	 * @param className the name of the class to containing the method
 	 * @param instance the object instance to use, or null if the method is
 	 * static or a new instance should be created
-	 * @param methodNameToCall the name of the method to call
+	 * @param methodName the name of the method to call
 	 * @param args the parameters to pass to the method
 	 */
-	public void callMethod(String classNameToLoad, Object instance, String methodNameToCall, Object[] args) {
+	public void callMethod(String className, Object instance, String methodName, Object[] args) {
 		Class<?> clazz = null;
 		// Create the list of parameter class types from the list of parameters
 		Class<?>[] argumentTypes = null;
@@ -154,15 +153,15 @@ public class RuntimeReloadMain implements Runnable {
 		Method method = null;
 		int modifiers = -1;
 		try {
-			clazz = Thread.currentThread().getContextClassLoader().loadClass(classNameToLoad);
-			method = clazz.getMethod(methodNameToCall, argumentTypes);
+			clazz = Thread.currentThread().getContextClassLoader().loadClass(className);
+			method = clazz.getMethod(methodName, argumentTypes);
 			modifiers = method.getModifiers();
 		} catch (SecurityException e1) {
-			System.err.println("Security exception, class " + classNameToLoad + " is not public, caused by " + e1.getCause());
+			System.err.println("Security exception, class " + className + " is not public, caused by " + e1.getCause());
 		} catch (NoSuchMethodException e1) {
-			System.err.println("No such method exception, method: " + methodNameToCall + ", caused by " + e1.getCause());
+			System.err.println("No such method exception, method: " + methodName + ", caused by " + e1.getCause());
 		} catch (ClassNotFoundException e1) {
-			System.err.println("Error, could not find class name=" + classNameToLoad + ", caused by " + e1.getCause());
+			System.err.println("Error, could not find class name=" + className + ", caused by " + e1.getCause());
 		}
 		// Save the class instance for comparison to other loaded classes later
 		currentReload = clazz;
@@ -172,17 +171,17 @@ public class RuntimeReloadMain implements Runnable {
 				instance = clazz.newInstance();
 			}
 		} catch(Exception e) {
-			System.err.println("Error creating new instance of class: " + classNameToLoad + ", " + e.getLocalizedMessage() + ", caused by " + e.getCause());
+			System.err.println("Error creating new instance of class: " + className + ", " + e.getLocalizedMessage() + ", caused by " + e.getCause());
 		}
 		// Call the method
 		try {
 			method.invoke(instance, args);
 		} catch (IllegalAccessException e) {
 			System.err.println("Illegal Access Exception: cannot invoke \'" + clazz.getSimpleName() + "." +
-					methodNameToCall + "\' method, caused by " + e.getCause());
+					methodName + "\' method, caused by " + e.getCause());
 			return;
 		} catch (InvocationTargetException e) {
-			System.err.println("Exception throw by " + classNameToLoad + "." + methodNameToCall +
+			System.err.println("Exception throw by " + className + "." + methodName +
 					"() while calling it, caused by " + e.getCause());
 		} finally {
 			method = null;
@@ -197,9 +196,9 @@ public class RuntimeReloadMain implements Runnable {
 	 * @param path the folder path or jar file path that the class is located in.
 	 * This path should end with a '/' forward slash if it is a folder, otherwise
 	 * it is assumed to be a jar file.
-	 * @param classNameToLoad the fully qualifying Java class name separated by
+	 * @param className the fully qualifying Java class name separated by
 	 * '.' periods
-	 * @param methodNameToCall the name of the method to call without parentheses
+	 * @param methodName the name of the method to call without parentheses
 	 * or arguments.
 	 * @param instance an optional instance of the class to use when calling the method,
 	 * if the method being called is not static and this instance parameter is null,
@@ -207,18 +206,18 @@ public class RuntimeReloadMain implements Runnable {
 	 * @param args the list of parameters to pass to the method call
 	 * @return true if the method was called, false if there was an error
 	 */
-	public Thread callClassMethod(String path, String classNameToLoad, String methodNameToCall, Object instance, Object... args) {
-		this.className = classNameToLoad;
-		this.methodName = methodNameToCall;
+	public Thread callClassMethod(String path, String className, String methodName, Object instance, Object... args) {
+		this.className = className;
+		this.methodName = methodName;
 		this.classInstance = instance;
 		this.arguments = args;
-		Thread t = new Thread(this, "Run " + classNameToLoad + "." + methodNameToCall);
+		Thread t = new Thread(this, "Run " + className + "." + methodName);
 		URLClassLoader cl = createClassLoader(path);
 
 		try {
 			t.setContextClassLoader(cl);
 		} catch(SecurityException se) {
-			System.err.println("Error, security error setting new thread class loader while trying to run class: " + classNameToLoad);
+			System.err.println("Error, security error setting new thread class loader while trying to run class: " + className);
 		}
 		t.start();
 		return t;
@@ -238,24 +237,24 @@ public class RuntimeReloadMain implements Runnable {
 	 * <br/>
 	 * @param originalPath the folder path (jar file paths are not yet supported) that the original
 	 * class to be overwritten is located in.
-	 * @param originalClassNameToLoad the fully qualifying Java name used of the original
+	 * @param originalClassName the fully qualifying Java name used of the original
 	 * class to overwrite, the path separated by '.' periods.
 	 * @param newPath the folder path (jar file paths are not yet supported) that the new class
 	 * to load and overwrite the original class with is located in.
-	 * @param newClassNameToLoad the fully qualifying Java name used for the new class to
+	 * @param newClassName the fully qualifying Java name used for the new class to
 	 * overwrite the old class, the path separated by '.' periods.
-	 * @param methodNameToCall the name of the method to call
+	 * @param methodName the name of the method to call
 	 * @param instance an optional instance of the class to use when calling the method, if the
 	 * method being called is not static and this instance parameter is null, than a new instance
 	 * of the class is created using {@link Class#newInstance()}.
 	 * @param args the list of parameters to pass to the method call
 	 * @return true if the method was called, false if there was an error
 	 */
-	public boolean overwriteClass(String originalPath, String originalClassNameToLoad, String newPath, String newClassNameToLoad, String methodNameToCall, Object instance, Object[] args) {
+	public boolean overwriteClass(String originalPath, String originalClassName, String newPath, String newClassName, String methodName, Object instance, Object[] args) {
 		try {
 			// The sub path of the class file with the class' name
-			String originalClassNamePath = originalClassNameToLoad.replace('.', File.separatorChar) + classPostfix;
-			String newClassNamePath = newClassNameToLoad.replace('.', File.separatorChar) + classPostfix;
+			String originalClassNamePath = originalClassName.replace('.', File.separatorChar) + classPostfix;
+			String newClassNamePath = newClassName.replace('.', File.separatorChar) + classPostfix;
 			// Create the full original path using the original path and class name path
 			String fullOriginalPath = originalPath + ((originalPath.endsWith("\\") || originalPath.endsWith("/")) ? originalClassNamePath : File.separatorChar + originalClassNamePath);
 			// Create the full new path using the new path and class name path
@@ -383,10 +382,7 @@ public class RuntimeReloadMain implements Runnable {
 		// MyClass' package declaration is "packet project.code;" would return a domain of "/home/me"
 		System.out.println("java.class.path" + ": " + System.getProperty("java.class.path"));
 		System.out.println("Domain: " + getApplicationPathURL());
-		System.out.println();
-
 		RuntimeReloadMain load = new RuntimeReloadMain();
-
 		load.loadLoopUserInput(defaultMainClassPath, classPath2, args);
 	}
 

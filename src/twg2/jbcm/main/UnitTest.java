@@ -16,6 +16,7 @@ import java.util.Scanner;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.dynamicModification.SimpleInterface;
 
+
 public class UnitTest {
 	static final String a = "twg2/jbcm/main/test/UnitTest";
 	static final String b = "UnitTest-Other";
@@ -26,7 +27,7 @@ public class UnitTest {
 	 * @throws IOException if there is an error reading the file
 	 */
 	public static ClassFile loadPrintClassInfo(PrintStream stream, File file) throws IOException {
-		ClassFile classFile = new ClassFile();
+		ClassFile classFile = ClassFile.load(file);
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
 
 		long time = System.nanoTime();
@@ -107,7 +108,7 @@ public class UnitTest {
 			System.out.print("enter file name (relative to '" + userDir + "' or absolute) to load: ");
 			input = in.nextLine();
 			path = getPath(fs, userDir, input);
-			classFile = loadClassFile(path);
+			classFile = ClassFile.load(path.toFile());
 			return classFile;
 		case "modify":
 			System.out.print("enter modification (currently not implemented): ");
@@ -137,11 +138,6 @@ public class UnitTest {
 
 	private static void printInfo(Path path) throws IOException {
 		ClassFile.load(path.toFile()).print(System.out);
-	}
-
-
-	private static ClassFile loadClassFile(Path path) throws IOException {
-		return ClassFile.load(path.toFile());
 	}
 
 

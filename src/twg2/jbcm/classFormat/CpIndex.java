@@ -128,7 +128,7 @@ public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable {
 
 	@Override
 	public String toString() {
-		return "CpIndex(index=" + index + ", type=" + clas.toString() + ", value=" + getCpObject() + ")";
+		return "CpIndex(index=" + index + ", value=" + getCpObject() + ")";
 	}
 
 }

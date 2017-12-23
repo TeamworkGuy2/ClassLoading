@@ -175,15 +175,22 @@ public class ClassFile implements Externalizable, ReadWritable {
 
 	public CpIndex<CONSTANT_CP_Info> getCpIndex(int index) {
 		if(index > 0 && index < constant_pool_count) {
-			CpIndex<CONSTANT_CP_Info> result = (CpIndex<CONSTANT_CP_Info>)constant_pool.get(index);
+			CpIndex<CONSTANT_CP_Info> result = constant_pool.get(index);
 			return result;
 		}
-		if(Settings.checkCPIndex) { throw new IllegalStateException("constant pool index " + index + " out of constant pool size bounds"); }
+		if(Settings.checkCPIndex) {
+			throw new IllegalStateException("constant pool index " + index + " out of constant pool size bounds");
+		}
 		return null;
 	}
 
 
 	public <T extends CONSTANT_CP_Info> CpIndex<T> getCheckCpIndex(int index, Class<T> clazz) {
+		return getCheckCpIndex(index, clazz, false);
+	}
+
+
+	public <T extends CONSTANT_CP_Info> CpIndex<T> getCheckCpIndex(int index, Class<T> clazz, boolean allowZero) {
 		if(index > 0 && index < constant_pool_count) {
 			@SuppressWarnings("unchecked")
 			CpIndex<T> result = (CpIndex<T>)constant_pool.get(index);
@@ -195,7 +202,9 @@ public class ClassFile implements Externalizable, ReadWritable {
 			}
 			return result;
 		}
-		if(Settings.checkCPIndex) { throw new IllegalStateException("constant pool index " + index + " out of constant pool size bounds"); }
+		if(!allowZero && Settings.checkCPIndex) {
+			throw new IllegalStateException("constant pool index " + index + " out of constant pool size bounds");
+		}
 		return null;
 	}
 
@@ -322,7 +331,9 @@ public class ClassFile implements Externalizable, ReadWritable {
 
 
 	public void setConstantPool(int index, CONSTANT_CP_Info cpObj) {
-		if(index < 1 || index >= constant_pool_count) { throw new IndexOutOfBoundsException("Illegal class file constant pool index: " + index); }
+		if(index < 1 || index >= constant_pool_count) {
+			throw new IndexOutOfBoundsException("Illegal class file constant pool index: " + index);
+		}
 		constant_pool.get(index).setCpObject(cpObj);
 	}
 
@@ -368,6 +379,7 @@ public class ClassFile implements Externalizable, ReadWritable {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	public void addInterface(CpIndex<CONSTANT_Class> interfaceClassIndex) {
 		CONSTANT_CP_Info interfaceClass = interfaceClassIndex.getCpObject();
 		if(!(interfaceClass instanceof CONSTANT_Class)) {
@@ -471,6 +483,7 @@ public class ClassFile implements Externalizable, ReadWritable {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void readData(DataInput in) throws IOException {
 		magic = in.readInt();

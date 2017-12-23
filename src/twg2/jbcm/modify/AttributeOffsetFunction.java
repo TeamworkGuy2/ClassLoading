@@ -6,6 +6,7 @@ package twg2.jbcm.modify;
  * @author TeamworkGuy2
  * @since 2014-4-19
  */
+@FunctionalInterface
 public interface AttributeOffsetFunction {
 
 	/** Performs this operation on the given argument.

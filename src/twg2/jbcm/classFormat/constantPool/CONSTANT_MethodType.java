@@ -14,11 +14,10 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-10-6
  */
 public class CONSTANT_MethodType implements CONSTANT_CP_Info {
-	public static final int CONSTANT_MethodType_info = 16;
+	public static final byte TAG = 16;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_MethodType_info;
-	/* The value of the descriptor_index item must be a valid index into the constant_pool table.
+	/** The value of the descriptor_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing a method descriptor (§4.3.3). 
 	 */
@@ -32,7 +31,7 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -54,7 +53,7 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_MethodType_info);
+		out.writeByte(TAG);
 		descriptor_index.writeData(out);
 	}
 
@@ -63,7 +62,7 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_MethodType_info) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
 		}
 		descriptor_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
 	}

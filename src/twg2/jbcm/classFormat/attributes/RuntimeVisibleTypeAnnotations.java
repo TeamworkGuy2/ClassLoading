@@ -30,28 +30,7 @@ public class RuntimeVisibleTypeAnnotations implements Attribute_Type {
 	 */
 	short num_annotations;
 	/** Each entry in the annotations table represents a single run-time visible annotation on a type used
-	 * in a declaration or expression.  The type_annotation structure has the following format:
-	 * <pre>type_annotation {
-	 *   u1 target_type;
-	 *   union {
-	 *     type_parameter_target;
-	 *     supertype_target;
-	 *     type_parameter_bound_target;
-	 *     empty_target;
-	 *     method_formal_parameter_target;
-	 *     throws_target;
-	 *     localvar_target;
-	 *     catch_target;
-	 *     offset_target;
-	 *     type_argument_target;
-	 *   } target_info;
-	 *   type_path target_path;
-	 *   u2 type_index;
-	 *   u2 num_element_value_pairs;
-	 *   { u2          element_name_index;
-	 *     element_value value;
-	 *   } element_value_pairs[num_element_value_pairs];
-	 * }</pre>
+	 * in a declaration or expression.
 	 */
 	TypeAnnotation[] annotations;
 
@@ -109,7 +88,16 @@ public class RuntimeVisibleTypeAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		return ATTRIBUTE_NAME + "(";
+		StringBuilder sb = new StringBuilder();
+		sb.append(ATTRIBUTE_NAME);
+		sb.append("([");
+		for(int i = 0; i < num_annotations - 1; i++) {
+			sb.append(annotations[i]);
+			sb.append(", ");
+		}
+		if(num_annotations > 0) { sb.append(annotations[num_annotations - 1]); }
+		sb.append("])");
+		return sb.toString();
 	}
 
 }

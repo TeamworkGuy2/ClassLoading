@@ -82,7 +82,9 @@ public class DynamicModificationMain {
 
 		// Load modified file and test it
 		Class<?> test = Thread.currentThread().getContextClassLoader().loadClass(fileClasspath + '.' + dynamicSubFolder + "." + dynamicClassName);
-		simpleDynamic.add( (SimpleInterface)test.newInstance());
+		@SuppressWarnings("deprecation")
+		SimpleInterface inst = (SimpleInterface)test.newInstance();
+		simpleDynamic.add(inst);
 		simpleDynamicName.add(methodDescriptor);
 		simplePlus = new OtherSimplImpl();
 	}
@@ -131,9 +133,9 @@ public class DynamicModificationMain {
 		String dynamicClassName = "ListInterfaceTest";
 
 		Class<?> test = Thread.currentThread().getContextClassLoader().loadClass(fileClasspath + '.' + dynamicSubFolder + "." + dynamicClassName);
-		@SuppressWarnings("unchecked")
-		ListInterfaceAddon<String> listTestInstance = (ListInterfaceAddon<String>)test.newInstance();
-		System.out.println("dynamic instance: " + listTestInstance + "\nsize(): " + listTestInstance.size() + "\nget(0): " + listTestInstance.get(0));	
+		@SuppressWarnings({ "unchecked", "deprecation" })
+		ListInterfaceAddon<String> listTestInst = (ListInterfaceAddon<String>)test.newInstance();
+		System.out.println("dynamic instance: " + listTestInst + "\nsize(): " + listTestInst.size() + "\nget(0): " + listTestInst.get(0));	
 	}
 
 

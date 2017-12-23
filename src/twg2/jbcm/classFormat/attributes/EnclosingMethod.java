@@ -19,19 +19,19 @@ import twg2.jbcm.modify.IndexUtility;
 public class EnclosingMethod implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "EnclosingMethod";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the string "EnclosingMethod".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item is four.
+	/** The value of the attribute_length item is four. */
 	int attribute_length;
-	/* The value of the class_index item must be a valid index into the constant_pool table.
+	/** The value of the class_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Class_info (§4.4.1) structure
 	 * representing the innermost class that encloses the declaration of the current class.
 	 */
 	CpIndex<CONSTANT_Class> class_index;
-	/* If the current class is not immediately enclosed by a method or constructor, then the value
+	/** If the current class is not immediately enclosed by a method or constructor, then the value
 	 * of the method_index item must be zero.
 	 * Otherwise, the value of the method_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_NameAndType_info structure (§4.4.6) representing
@@ -84,14 +84,14 @@ public class EnclosingMethod implements Attribute_Type {
 		}
 		attribute_length = in.readInt();
 		class_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
-		method_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+		method_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class, true);
 	}
 
 
 	@Override
 	public String toString() {
 		return ATTRIBUTE_NAME + "(class=" + class_index.getCpObject() +
-				", method=" + (method_index.getIndex() != 0 ? method_index.getCpObject() : "null") + ")";
+				", method=" + (method_index.getIndex() > 0 ? method_index.getCpObject() : "null") + ")";
 	}
 
 }

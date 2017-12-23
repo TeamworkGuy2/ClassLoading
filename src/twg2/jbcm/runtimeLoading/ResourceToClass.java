@@ -26,6 +26,7 @@ public class ResourceToClass {
 	 */
 	public ResourceToClass(URL[] urls, int runI, MemoryClassLoader cl) throws InstantiationException, IllegalAccessException, IOException {
 		Class<?>[] classes = loadClasses(urls, cl);
+		@SuppressWarnings("deprecation")
 		Runnable r = (Runnable)classes[runI].newInstance();
 		r.run();
 	}

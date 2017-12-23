@@ -10,23 +10,20 @@ import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
 import twg2.jbcm.modify.IndexUtility;
 
-/** A Java class file format Annotation subtype of type <code>Element_Value_Pair</code> 
+/** A Java class file format Annotation subtype of type <code>Element_Value_Pair</code>.
+ * Represents a single element-value pair in an annotation structure.
  * @author TeamworkGuy2
  * @since 2013-12-3
  */
 public class Element_Value_Pair implements ReadWritable {
 	ClassFile resolver;
-	/* Each value of the element_value_pairs table represents a single element-value pair
-	 * in the annotation represented by this annotation structure. Each element_value_pairs
-	 * entry contains the following two items:
-	 */
-	/* The value of the element_name_index item must be a valid index into the constant_pool table.
+	/** The value of the element_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7)
 	 * representing a valid field descriptor (§4.3.2) that denotes the name of the annotation
 	 * type element represented by this element_value_pairs entry. 
 	 */
 	CpIndex<CONSTANT_Utf8> element_name_index;
-	/* The value of the value item represents the value of the element-value pair represented by
+	/** The value of the value item represents the value of the element-value pair represented by
 	 * this element_value_pairs entry.
 	 */
 	Element_Value value;

@@ -9,7 +9,6 @@ import twg2.jbcm.modify.IndexUtility;
 
 /** A container class for all {@link Target_Info} classes
  * which are a member type in {@link TypeAnnotation}.<br/>
- * TODO move this classes into their own class files... (2013-3-19)
  * The items of the target_info union (except for the first) specify precisely which type in a
  * declaration or expression is annotated. The first item specifies not which type, but rather
  * which declaration of a type parameter is annotated. The items are as follows:<br/>
@@ -26,11 +25,12 @@ import twg2.jbcm.modify.IndexUtility;
  * @author TeamworkGuy2
  * @since 2014-3-19
  */
-public final class Target_Info_Type {
+public final class Target_Info_Union {
 
-	private Target_Info_Type() {
-		throw new AssertionError("may not instantiate Target_Info_Type, only a subtype");
+	private Target_Info_Union() {
+		throw new AssertionError("cannot instantiate static class Target_Info_Type");
 	}
+
 
 
 	/** The type_parameter_target item indicates that an annotation appears on the declaration of
@@ -62,9 +62,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.type_parameter_target(type_parameter_index=" + type_parameter_index + ")";
+			return "type_parameter_target(type_parameter_index=" + type_parameter_index + ")";
 		}
 	}
+
+
 
 
 	/** The supertype_target item indicates that an annotation appears on a type in the extends or implements
@@ -99,9 +101,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.supertype_target(supertype_index=" + supertype_index + ")";
+			return "supertype_target(supertype_index=" + supertype_index + ")";
 		}
 	}
+
+
 
 
 	/** The type_parameter_bound_target item indicates that an annotation appears on the i'th bound of
@@ -144,10 +148,12 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.type_parameter_bound_target(type_parameter_index=" + type_parameter_index
+			return "type_parameter_bound_target(type_parameter_index=" + type_parameter_index
 					+ ", bound_index=" + bound_index + ")";
 		}
 	}
+
+
 
 
 	/** The empty_target item indicates that an annotation appears on either the type in a field declaration,
@@ -177,9 +183,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.empty_target()";
+			return "empty_target()";
 		}
 	}
+
+
 
 
 	/** The formal_parameter_target item indicates that an annotation appears on the type in a formal
@@ -216,9 +224,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.formal_parameter_target(formal_parameter_index=" + formal_parameter_index + ")";
+			return "formal_parameter_target(formal_parameter_index=" + formal_parameter_index + ")";
 		}
 	}
+
+
 
 
 	/** The throws_target item indicates that an annotation appears on the i'th type in the throws clause of
@@ -250,9 +260,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.throws_target(throws_type_index=" + throws_type_index + ")";
+			return "throws_target(throws_type_index=" + throws_type_index + ")";
 		}
 	}
+
+
 
 
 	/** The localvar_target item indicates that an annotation appears on the type in a local variable
@@ -315,16 +327,71 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			StringBuilder strB = new StringBuilder();
-			strB.append("target_info.localvar_target(table_length=" + table_length + ", table[");
-			for(int i = 0, size = table_length-1; i < size; i++) {
-				strB.append(table[i].toString() + ", ");
+			StringBuilder sb = new StringBuilder();
+			sb.append("localvar_target(table_length=").append(table_length)
+				.append(", table[");
+			for(int i = 0, size = table_length - 1; i < size; i++) {
+				sb.append(table[i]).append(", ");
 			}
-			strB.append(table[table_length-1].toString());
-			strB.append("])");
-			return strB.toString();
+			if(table_length > 0) { sb.append(table[table_length - 1]); }
+			sb.append("])");
+			return sb.toString();
 		}
 	}
+
+
+
+
+	/** A member of the {@link TypeAnnotation} type and used in {@link Target_Info_Union}
+	 * by {@link Target_Info_Union.Localvar_Target}.
+	 * Indicates a range of code array offsets within which a local variable has a value. It also
+	 * indicates the index into the local variable array of the current frame at which that local
+	 * variable can be found.
+	 * @author TeamworkGuy2
+	 * @since 2014-3-19
+	 */
+	public static class Localvar_Target_Table_Entry implements ReadWritable, Code_Attribute {
+		/** The given local variable has a value at indices into the code array in the
+		 * interval [start_pc, start_pc + length), that is, between start_pc inclusive
+		 * and start_pc + length exclusive.
+		 */
+		short start_pc;
+		short length;
+		/** The given local variable must be at index in the local variable array of the current frame.
+		 * If the local variable at index is of type double or long, it occupies both index and index + 1.
+		 */
+		short index;
+
+
+		@Override
+		public void changeCpIndex(short oldIndex, short newIndex) {
+		}
+
+
+		@Override
+		public void writeData(DataOutput out) throws IOException {
+			out.writeShort(start_pc);
+			out.writeShort(length);
+			out.writeShort(index);
+		}
+
+
+		@Override
+		public void readData(DataInput in) throws IOException {
+			start_pc = in.readShort();
+			length = in.readShort();
+			index = in.readShort();
+		}
+
+
+		@Override
+		public String toString() {
+			return "localvar_target_table_entry(start_pc=" + start_pc + ", length=" + length + ", index=" + index + ")";
+		}
+
+	}
+
+
 
 
 	/** The catch_target item indicates that an annotation appears on the i'th type in an exception parameter
@@ -360,9 +427,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.catch_target(exception_table_index=" + exception_table_index + ")";
+			return "catch_target(exception_table_index=" + exception_table_index + ")";
 		}
 	}
+
+
 
 
 	/** The offset_target item indicates that an annotation appears on either the type in an instanceof
@@ -395,9 +464,11 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.offset_target(offset=" + offset + ")";
+			return "offset_target(offset=" + offset + ")";
 		}
 	}
+
+
 
 
 	/** The type_argument_target item indicates that an annotation appears either on the i'th type in a
@@ -443,8 +514,7 @@ public final class Target_Info_Type {
 
 		@Override
 		public String toString() {
-			return "target_info.type_argument_target(offset=" + offset
-					+ ", type_argument_index=" + type_argument_index + ")";
+			return "type_argument_target(offset=" + offset + ", type_argument_index=" + type_argument_index + ")";
 		}
 	}
 

@@ -18,16 +18,16 @@ import twg2.jbcm.modify.IndexUtility;
 public class SourceDebugExtension implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "SourceDebugExtension";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the string "SourceDebugExtension".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	/* The value of the attribute_length item indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length item indicates the length of the attribute, excluding the initial six bytes.
 	 * The value of the attribute_length item is thus the number of bytes in the debug_extension[] item. 
 	 */
 	int attribute_length;
-	/* The debug_extension array holds extended debugging information which has no semantic effect
+	/** The debug_extension array holds extended debugging information which has no semantic effect
 	 * on the Java Virtual Machine. The information is represented using a modified UTF-8 string (§4.4.7)
 	 * with no terminating zero byte.
 	 * Note that the debug_extension array may denote a string longer than that which can be

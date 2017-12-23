@@ -12,10 +12,12 @@ import twg2.jbcm.classFormat.Settings;
  * @since 2013-7-7
  */
 public class CONSTANT_Integer implements CONSTANT_CP_Info {
-	public static final int CONSTANT_Integer_info = 3;
+	public static final byte TAG = 3;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_Integer_info;
+	/** The bytes item of the CONSTANT_Integer_info structure represents the value of the int constant.
+	 * The bytes of the value are stored in big-endian (high byte first) order.
+	 */
 	int bytes;
 
 
@@ -26,7 +28,7 @@ public class CONSTANT_Integer implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -37,7 +39,7 @@ public class CONSTANT_Integer implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_Integer_info);
+		out.writeByte(TAG);
 		out.writeInt(bytes);
 	}
 
@@ -46,7 +48,7 @@ public class CONSTANT_Integer implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_Integer_info) { throw new IllegalStateException("Illegal CONSTANT_Integer tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Integer tag: " + tagV); }
 		}
 		bytes = in.readInt();
 	}
@@ -54,7 +56,7 @@ public class CONSTANT_Integer implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "CONSTANT_Integer(3, " + bytes + ")";
+		return "Integer(3, " + bytes + ")";
 	}
 
 }

@@ -89,7 +89,15 @@ public class RuntimeInvisibleTypeAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		return ATTRIBUTE_NAME + "(";
+		StringBuilder sb = new StringBuilder();
+		sb.append(ATTRIBUTE_NAME).append("([");
+		for(int i = 0; i < num_annotations - 1; i++) {
+			sb.append(annotations[i]);
+			sb.append(", ");
+		}
+		if(num_annotations > 0) { sb.append(annotations[num_annotations-1]); }
+		sb.append("])");
+		return sb.toString();
 	}
 
 }

@@ -17,14 +17,14 @@ import twg2.jbcm.modify.IndexUtility;
 public class Signature implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "Signature";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the string "Signature".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item of a Signature_attribute structure must be 2.
+	/** The value of the attribute_length item of a Signature_attribute structure must be 2. */
 	int attribute_length;
-	/* The value of the signature_index item must be a valid index into the constant_pool table.
+	/** The value of the signature_index item must be a valid index into the constant_pool table.
 	 * The constant pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing a class signature (§4.3.4) if this Signature attribute is an attribute
 	 * of a ClassFile structure; a method signature if this Signature attribute is an

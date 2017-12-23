@@ -14,17 +14,16 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-7-7
  */
 public class CONSTANT_Methodref implements CONSTANT_CP_Info {
-	public static final int CONSTANT_Methodref_info = 10;
+	public static final byte TAG = 10;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_Methodref_info;
-	/* The value of the class_index item must be a valid index into the constant_pool table. The constant_pool entry
+	/** The value of the class_index item must be a valid index into the constant_pool table. The constant_pool entry
 	 * at that index must be a CONSTANT_Class_info (§4.4.1) structure representing the class or interface type that
 	 * contains the declaration of the field or method.
 	 * The class_index item of a CONSTANT_Methodref_info structure must be a class type, not an interface type. 
 	 */
 	CpIndex<CONSTANT_Class> class_index;
-	/* The value of the name_and_type_index item must be a valid index into the constant_pool table.
+	/** The value of the name_and_type_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_NameAndType_info (§4.4.6) structure.
 	 * This constant_pool entry indicates the name and descriptor of the field or method.
 	 * In a CONSTANT_Fieldref_info the indicated descriptor must be a field descriptor (§4.3.2).
@@ -43,7 +42,7 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -76,7 +75,7 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_Methodref_info);
+		out.writeByte(TAG);
 		class_index.writeData(out);
 		name_and_type_index.writeData(out);
 	}
@@ -86,7 +85,7 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_Methodref_info) { throw new IllegalStateException("Illegal CONSTANT_Methodref tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Methodref tag: " + tagV); }
 		}
 		class_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
 		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
@@ -95,10 +94,9 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		//return "CONSTANT_Methodref(10, class=" + resolver.getConstantPool(class_index) + ", name_and_type=" + resolver.getConstantPool(name_and_type_index) + ")";
 		CONSTANT_Class clazz = class_index.getCpObject();
 		CONSTANT_NameAndType method = name_and_type_index.getCpObject();
-		return "CONSTANT_Methodref(10, class=" + clazz.getName() + ", name=" + method.getName() + ", type=" + method.getDescriptor() + ")";
+		return "Methodref(10, class=" + clazz.getName() + ", name=" + method.getName() + ", type=" + method.getDescriptor() + ")";
 	}
 
 }

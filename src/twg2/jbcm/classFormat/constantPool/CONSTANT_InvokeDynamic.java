@@ -7,8 +7,8 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.classFormat.attributes.BootstrapMethod;
 import twg2.jbcm.classFormat.attributes.BootstrapMethods;
+import twg2.jbcm.classFormat.attributes.BootstrapMethods.BootstrapMethod;
 import twg2.jbcm.modify.IndexUtility;
 
 /** Java class file format constant pool <code>InvokeDynamic reference</code> info type
@@ -16,15 +16,14 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-10-6
  */
 public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
-	public static final int CONSTANT_InvokeDynamic_info = 18;
+	public static final byte TAG = 18;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_InvokeDynamic_info;
-	/* The value of the bootstrap_method_attr_index item must be a valid index into the bootstrap_methods
+	/** The value of the bootstrap_method_attr_index item must be a valid index into the bootstrap_methods
 	 * array of the bootstrap method table (§4.7.21) of this class file. 
 	 */
 	short bootstrap_method_attr_index;
-	/* The value of the name_and_type_index item must be a valid index into the constant_pool table.
+	/** The value of the name_and_type_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_NameAndType_info (§4.4.6) structure
 	 * representing a method name and method descriptor (§4.3.3). 
 	 */
@@ -38,7 +37,7 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -70,7 +69,7 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_InvokeDynamic_info);
+		out.writeByte(TAG);
 		out.writeShort(bootstrap_method_attr_index);
 		name_and_type_index.writeData(out);
 	}
@@ -80,7 +79,7 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_InvokeDynamic_info) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
 		}
 		bootstrap_method_attr_index = in.readShort();
 		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);

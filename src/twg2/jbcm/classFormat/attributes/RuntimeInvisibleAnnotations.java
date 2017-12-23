@@ -17,23 +17,23 @@ import twg2.jbcm.modify.IndexUtility;
 public class RuntimeInvisibleAnnotations implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "RuntimeInvisibleAnnotations";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the string "RuntimeInvisibleAnnotations".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	/* The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
 	 * The value of the attribute_length item is thus dependent on the number of run-time-invisible
 	 * annotations represented by the structure, and their values.
 	 */
 	int attribute_length;
-	/* The value of the num_annotations item gives the number of run-time-invisible annotations
+	/** The value of the num_annotations item gives the number of run-time-invisible annotations
 	 * represented by the structure.
 	 * Note that a maximum of 65535 run-time-invisible Java programming language annotations may be
 	 * directly attached to a program element.
 	 */
 	short num_annotations;
-	/* Each value of the annotations table represents a single run-time-invisible annotation on a program element. 
+	/** Each value of the annotations table represents a single run-time-invisible annotation on a program element. 
 	 */
 	Annotation[] annotations;
 
@@ -91,7 +91,7 @@ public class RuntimeInvisibleAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		StringBuilder str = new StringBuilder(64);
+		StringBuilder str = new StringBuilder();
 		str.append(ATTRIBUTE_NAME);
 		str.append("([");
 		for(int i = 0; i < num_annotations-1; i++) {

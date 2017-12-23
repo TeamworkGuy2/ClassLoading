@@ -17,23 +17,23 @@ import twg2.jbcm.modify.IndexUtility;
 public class RuntimeVisibleAnnotations implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "RuntimeVisibleAnnotations";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the string "RuntimeVisibleAnnotations".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	/* The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
 	 * The value of the attribute_length item is thus dependent on the number of run-time-invisible
 	 * annotations represented by the structure, and their values.
 	 */
 	int attribute_length;
-	/* The value of the num_annotations item gives the number of run-time-invisible annotations
+	/** The value of the num_annotations item gives the number of run-time-invisible annotations
 	 * represented by the structure.
 	 * Note that a maximum of 65535 run-time-invisible Java programming language annotations may be
 	 * directly attached to a program element.
 	 */
 	short num_annotations;
-	/* Each value of the annotations table represents a single run-time-visible annotation on a program element.
+	/** Each value of the annotations table represents a single run-time-visible annotation on a program element.
 	 */
 	Annotation[] annotations;
 
@@ -91,16 +91,16 @@ public class RuntimeVisibleAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		StringBuilder str = new StringBuilder(64);
-		str.append(ATTRIBUTE_NAME);
-		str.append("([");
-		for(int i = 0; i < num_annotations-1; i++) {
-			str.append(annotations[i].toString());
-			str.append(", ");
+		StringBuilder sb = new StringBuilder();
+		sb.append(ATTRIBUTE_NAME);
+		sb.append("([");
+		for(int i = 0; i < num_annotations - 1; i++) {
+			sb.append(annotations[i]);
+			sb.append(", ");
 		}
-		if(num_annotations > 0) { str.append(annotations[num_annotations-1].toString()); }
-		str.append("])");
-		return str.toString();
+		if(num_annotations > 0) { sb.append(annotations[num_annotations - 1]); }
+		sb.append("])");
+		return sb.toString();
 	}
 
 }

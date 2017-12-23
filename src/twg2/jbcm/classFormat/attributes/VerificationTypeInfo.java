@@ -10,13 +10,13 @@ import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.modify.IndexUtility;
 
-/** A Java class file format Attribute of type <code>VerificationTypeInfo</code> for a {@link StackMapFrame}
+/** A Java class file format Attribute of type <code>VerificationTypeInfo</code> for a {@link StackMapTable.StackMapFrame}
  * @author TeamworkGuy2
  * @since 2013-10-6
  */
 public class VerificationTypeInfo implements ReadWritable {
 	ClassFile resolver;
-	/* The verification type info:
+	/** The verification type info:
 	 * 0 = TOP
 	 * 1 = INTEGER
 	 * 2 = FLOAT
@@ -28,14 +28,16 @@ public class VerificationTypeInfo implements ReadWritable {
 	 * 8 = UNINITIALIZED
 	 */
 	byte tag;
-	// Used by the OBJECT verification type
-	// The Object_variable_info item indicates that the location has the verification type which is the class represented by
-	// the CONSTANT_Class_info structure (§4.4.1) found in the constant_pool table at the index given by cpool_index. 
+	/** Used by the OBJECT verification type
+	 * The Object_variable_info item indicates that the location has the verification type which is the class represented by
+	 * the CONSTANT_Class_info structure (§4.4.1) found in the constant_pool table at the index given by cpool_index.
+	 */ 
 	CpIndex<CONSTANT_Class> cpool_index;
-	// Used by the UNINITIALIZED verification type
-	// The Uninitialized_variable_info item indicates that the location has the verification type uninitialized(Offset).
-	// The Offset item indicates the offset, in the code array of the Code attribute that contains this StackMapTable
-	// attribute, of the new instruction (§new) that created the object being stored in the location.
+	/** Used by the UNINITIALIZED verification type
+	 * The Uninitialized_variable_info item indicates that the location has the verification type uninitialized(Offset).
+	 * The Offset item indicates the offset, in the code array of the Code attribute that contains this StackMapTable
+	 * attribute, of the new instruction (§new) that created the object being stored in the location.
+	 */
 	short offset;
 
 

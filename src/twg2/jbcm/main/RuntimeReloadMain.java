@@ -168,7 +168,9 @@ public class RuntimeReloadMain implements Runnable {
 		// If the method is not static and the instance is null, create an instance of the class to use to call the method
 		try {
 			if(instance == null && !Modifier.isStatic(modifiers)) {
-				instance = clazz.newInstance();
+				@SuppressWarnings("deprecation")
+				Object obj = clazz.newInstance();
+				instance = obj;
 			}
 		} catch(Exception e) {
 			System.err.println("Error creating new instance of class: " + className + ", " + e.getLocalizedMessage() + ", caused by " + e.getCause());

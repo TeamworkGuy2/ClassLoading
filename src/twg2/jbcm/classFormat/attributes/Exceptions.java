@@ -18,15 +18,15 @@ import twg2.jbcm.modify.IndexUtility;
 public class Exceptions implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "Exceptions";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "Exceptions".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item indicates the attribute length, excluding the initial six bytes.
+	/** The value of the attribute_length item indicates the attribute length, excluding the initial six bytes. */
 	int attribute_length;
-	// The value of the number_of_exceptions item indicates the number of entries in the exception_index_table.
+	/** The value of the number_of_exceptions item indicates the number of entries in the exception_index_table. */
 	short number_of_exceptions;
-	/* Each value in the exception_index_table array must be a valid index into the constant_pool table. The constant_pool
+	/** Each value in the exception_index_table array must be a valid index into the constant_pool table. The constant_pool
 	 * entry referenced by each table item must be a CONSTANT_Class_info (§4.4.1) structure representing a
 	 * class type that this method is declared to throw, size [number_of_exceptions], 0 indexed.
 	 */
@@ -69,6 +69,7 @@ public class Exceptions implements Attribute_Type {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void readData(DataInput in) throws IOException {
 		if(Settings.doReadAttributeName()) {
@@ -86,9 +87,9 @@ public class Exceptions implements Attribute_Type {
 	@Override
 	public String toString() {
 		StringBuilder str = new StringBuilder();
-		str.append(ATTRIBUTE_NAME + "(exceptions: " + number_of_exceptions + " [");
+		str.append(ATTRIBUTE_NAME).append("(exceptions: ").append(number_of_exceptions).append(" [");
 		for(int i = 0; i < number_of_exceptions-1; i++) {
-			str.append(exception_index_table[i].getCpObject() + ", ");
+			str.append(exception_index_table[i].getCpObject()).append(", ");
 		}
 		if(number_of_exceptions > 0) { str.append(exception_index_table[number_of_exceptions-1].getCpObject()); }
 		str.append("])");

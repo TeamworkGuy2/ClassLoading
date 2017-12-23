@@ -19,7 +19,7 @@ import twg2.jbcm.modify.IndexUtility;
  */
 public class Element_Value implements ReadWritable {
 	ClassFile resolver;
-	/* The tag item indicates the type of this annotation element-value pair.
+	/** The tag item indicates the type of this annotation element-value pair.
 	 * The letters B, C, D, F, I, J, S, and Z indicate a primitive type. These letters are
 	 * interpreted as if they were field descriptors (§4.3.2).
 	 * The other legal values for tag are listed with their interpretations in Table 4.9.
@@ -36,7 +36,7 @@ public class Element_Value implements ReadWritable {
 	byte tag;
 
 	// If tag is: B, C, D, F, I, J, S, Z, or s
-	/* The const_value_index item is used if the tag item is one of B, C, D, F, I, J, S, Z, or s.
+	/** The const_value_index item is used if the tag item is one of B, C, D, F, I, J, S, Z, or s.
 	 * The value of the const_value_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be of the correct entry type for the field type
 	 * designated by the tag item, as specified in Table 4.9.
@@ -47,20 +47,20 @@ public class Element_Value implements ReadWritable {
 	CpIndex<CONSTANT_CP_Info> const_value_index;
 
 	// If the tag is: e
-	/* The value of the type_name_index item must be a valid index into the constant_pool table.
+	/** The value of the type_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7) representing
 	 * a valid field descriptor (§4.3.2) that denotes the internal form of the binary name (§4.2.1)
 	 * of the type of the enum constant represented by this element_value structure. 
 	 */
 	CpIndex<CONSTANT_Utf8> type_name_index;
-	/* The value of the const_name_index item must be a valid index into the constant_pool table.
+	/** The value of the const_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7) representing
 	 * the simple name of the enum constant represented by this element_value structure. 
 	 */
 	CpIndex<CONSTANT_Utf8> const_name_index;
 
 	// If the tag is: c
-	/* The class_info_index item is used if the tag item is c.
+	/** The class_info_index item is used if the tag item is c.
 	 * The class_info_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing the return descriptor (§4.3.3) of the type that is reified by the class
@@ -70,18 +70,18 @@ public class Element_Value implements ReadWritable {
 	CpIndex<CONSTANT_Utf8> class_info_index;
 
 	// If the tag is: @
-	/* The annotation_value item is used if the tag item is @.
+	/** The annotation_value item is used if the tag item is @.
 	 * The element_value structure represents a "nested" annotation. 
 	 */
 	Annotation annotation_value;
 
 	// If the tag is: [
-	/* The value of the num_values item gives the number of elements in the array-typed value represented
+	/** The value of the num_values item gives the number of elements in the array-typed value represented
 	 * by this element_value structure.
 	 * Note that a maximum of 65535 elements are permitted in an array-typed element value. 
 	 */
 	short num_values;
-	/* Each value of the values table gives the value of an element of the array-typed value
+	/** Each value of the values table gives the value of an element of the array-typed value
 	 * represented by this element_value structure. 
 	 */
 	Element_Value[] values;
@@ -94,12 +94,12 @@ public class Element_Value implements ReadWritable {
 
 	@Override
 	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(const_value_index, oldIndex, newIndex);
-		IndexUtility.indexChange(const_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(type_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(class_info_index, oldIndex, newIndex);
-		IndexUtility.indexChange(annotation_value, oldIndex, newIndex);
-		IndexUtility.indexChange(values, oldIndex, newIndex);
+		if(const_value_index != null) IndexUtility.indexChange(const_value_index, oldIndex, newIndex);
+		if(const_name_index != null) IndexUtility.indexChange(const_name_index, oldIndex, newIndex);
+		if(type_name_index != null) IndexUtility.indexChange(type_name_index, oldIndex, newIndex);
+		if(class_info_index != null) IndexUtility.indexChange(class_info_index, oldIndex, newIndex);
+		if(annotation_value != null) IndexUtility.indexChange(annotation_value, oldIndex, newIndex);
+		if(values != null) IndexUtility.indexChange(values, oldIndex, newIndex);
 	}
 
 
@@ -249,44 +249,44 @@ public class Element_Value implements ReadWritable {
 
 	@Override
 	public String toString() {
-		StringBuilder strB = new StringBuilder(64);
-		strB.append("element_value(tag=");
-		strB.append((char)tag);
-		strB.append(", ");
+		StringBuilder sb = new StringBuilder(64);
+		sb.append("element_value(tag=");
+		sb.append((char)tag);
+		sb.append(", ");
 
 		if(tag == 'B' || tag == 'C' || tag == 'D' || tag == 'F' || tag == 'I' || tag == 'J' || tag == 'S' ||
 				tag == 'Z' || tag == 's') {
-			strB.append("primitive_or_String=");
-			strB.append(const_value_index.getCpObject());
+			sb.append("primitive_or_String=");
+			sb.append(const_value_index.getCpObject());
 		}
 		else if(tag == 'e') {
-			strB.append("enum=[");
-			strB.append(type_name_index.getCpObject());
-			strB.append(", ");
-			strB.append(const_name_index.getCpObject());
-			strB.append("]");
+			sb.append("enum=[");
+			sb.append(type_name_index.getCpObject());
+			sb.append(", ");
+			sb.append(const_name_index.getCpObject());
+			sb.append("]");
 		}
 		else if(tag == 'c') {
-			strB.append("class=");
-			strB.append(class_info_index);
+			sb.append("class=");
+			sb.append(class_info_index);
 		}
 		else if(tag == '@') {
-			strB.append("annotation=");
-			strB.append(annotation_value.toString());
+			sb.append("annotation=");
+			sb.append(annotation_value.toString());
 		}
 		else if(tag == '[') {
-			strB.append("array=[");
+			sb.append("array=[");
 			for(int i = 0; i < num_values-1; i++) {
-				strB.append(values[i].toString());
-				strB.append(", ");
+				sb.append(values[i].toString());
+				sb.append(", ");
 			}
 			if(num_values > 0) {
-				strB.append(values[num_values-1].toString());
+				sb.append(values[num_values-1].toString());
 			}
-			strB.append("]");
+			sb.append("]");
 		}
 
-		return strB.toString();
+		return sb.toString();
 	}
 
 }

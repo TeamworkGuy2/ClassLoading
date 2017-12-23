@@ -16,13 +16,13 @@ import twg2.jbcm.modify.IndexUtility;
  */
 public class UnknownAttributeType implements Attribute_Type {
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the attribute's name.
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item is 0.
+	/** The value of the attribute_length item is 0. */
 	int attribute_length;
-	// The data bytes of the attribute, size [attribute_length], 0 indexed
+	/** The data bytes of the attribute, size [attribute_length], 0 indexed */
 	byte[] data;
 
 

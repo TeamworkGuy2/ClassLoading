@@ -14,11 +14,10 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-7-7
  */
 public class CONSTANT_String implements CONSTANT_CP_Info {
-	public static final int CONSTANT_String_info = 8;
+	public static final byte TAG = 8;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_String_info;
-	/* The value of the string_index item must be a valid index into the constant_pool table. The constant_pool entry
+	/** The value of the string_index item must be a valid index into the constant_pool table. The constant_pool entry
 	 * at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the sequence of characters to which
 	 * the String object is to be initialized.
 	 */
@@ -32,7 +31,7 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -54,7 +53,7 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_String_info);
+		out.writeByte(TAG);
 		string_index.writeData(out);
 	}
 
@@ -63,7 +62,7 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_String_info) { throw new IllegalStateException("Illegal CONSTANT_String tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_String tag: " + tagV); }
 		}
 		string_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
 	}
@@ -71,7 +70,7 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "CONSTANT_String(8, index=" + string_index + ", string=" + string_index.getCpObject() + ")";
+		return "String(8, index=" + string_index + ", string=" + string_index.getCpObject() + ")";
 	}
 
 }

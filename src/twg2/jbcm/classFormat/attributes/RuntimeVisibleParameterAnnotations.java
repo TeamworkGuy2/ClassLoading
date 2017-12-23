@@ -17,22 +17,22 @@ import twg2.jbcm.modify.IndexUtility;
 public class RuntimeVisibleParameterAnnotations implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "RuntimeVisibleParameterAnnotations";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7) representing
 	 * the string "RuntimeVisibleParameterAnnotations". 
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	/* The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
 	 * The value of the attribute_length item is thus dependent on the number of parameters, the number
 	 * of run-time-visible annotations on each parameter, and their values.  
 	 */
 	int attribute_length;
-	/* The value of the num_parameters item gives the number of parameters of the method represented
+	/** The value of the num_parameters item gives the number of parameters of the method represented
 	 * by the method_info structure on which the annotation occurs. (This duplicates information that
 	 * could be extracted from the method descriptor (§4.3.3).) 
 	 */
 	byte num_parameters;
-	/* Each value of the parameter_annotations table represents all of the run-time-invisible annotations
+	/** Each value of the parameter_annotations table represents all of the run-time-invisible annotations
 	 * on a single parameter. The sequence of values in the table corresponds to the sequence of parameters
 	 * in the method descriptor. Each parameter_annotations entry contains the following two items:
 	 * num_annotations,
@@ -94,16 +94,16 @@ public class RuntimeVisibleParameterAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		StringBuilder str = new StringBuilder(64);
-		str.append(ATTRIBUTE_NAME);
-		str.append("([");
-		for(int i = 0; i < num_parameters-1; i++) {
-			str.append(parameter_annotations[i].toString());
-			str.append(", ");
+		StringBuilder sb = new StringBuilder();
+		sb.append(ATTRIBUTE_NAME);
+		sb.append("([");
+		for(int i = 0; i < num_parameters - 1; i++) {
+			sb.append(parameter_annotations[i]);
+			sb.append(", ");
 		}
-		if(num_parameters > 0) { str.append(parameter_annotations[num_parameters-1].toString()); }
-		str.append("])");
-		return str.toString();
+		if(num_parameters > 0) { sb.append(parameter_annotations[num_parameters - 1]); }
+		sb.append("])");
+		return sb.toString();
 	}
 
 }

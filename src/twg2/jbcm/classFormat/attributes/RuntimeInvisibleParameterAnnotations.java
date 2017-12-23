@@ -17,26 +17,26 @@ import twg2.jbcm.modify.IndexUtility;
 public class RuntimeInvisibleParameterAnnotations implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "RuntimeInvisibleParameterAnnotations";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table.
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7) representing
 	 * the string "RuntimeInvisibleParameterAnnotations". 
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	/* The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
 	 * The value of the attribute_length item is thus dependent on the number of parameters,
 	 * the number of run-time-invisible annotations on each parameter, and their values. 
 	 */
 	int attribute_length;
-	/* The value of the num_parameters item gives the number of parameters of the method represented
+	/** The value of the num_parameters item gives the number of parameters of the method represented
 	 * by the method_info structure on which the annotation occurs. (This duplicates information that
-	 * could be extracted from the method descriptor (§4.3.3).) 
+	 * could be extracted from the method descriptor (§4.3.3)).
 	 */
 	byte num_parameters;
-	/* Each value of the parameter_annotations table represents all of the run-time-invisible annotations
+	/** Each value of the parameter_annotations table represents all of the run-time-invisible annotations
 	 * on a single parameter. The sequence of values in the table corresponds to the sequence of parameters
-	 * in the method descriptor. Each parameter_annotations entry contains the following two items:
-	 * num_annotations,
-	 * annotations[]
+	 * in the method descriptor. Each parameter_annotations entry contains the following two items:<pre>
+	 * num_annotations
+	 * annotations[]</pre>
 	 */
 	Parameter_Annotations[] parameter_annotations;
 
@@ -94,14 +94,14 @@ public class RuntimeInvisibleParameterAnnotations implements Attribute_Type {
 
 	@Override
 	public String toString() {
-		StringBuilder str = new StringBuilder(64);
+		StringBuilder str = new StringBuilder();
 		str.append(ATTRIBUTE_NAME);
 		str.append("([");
-		for(int i = 0; i < num_parameters-1; i++) {
-			str.append(parameter_annotations[i].toString());
+		for(int i = 0; i < num_parameters - 1; i++) {
+			str.append(parameter_annotations[i]);
 			str.append(", ");
 		}
-		if(num_parameters > 0) { str.append(parameter_annotations[num_parameters-1].toString()); }
+		if(num_parameters > 0) { str.append(parameter_annotations[num_parameters - 1]); }
 		str.append("])");
 		return str.toString();
 	}

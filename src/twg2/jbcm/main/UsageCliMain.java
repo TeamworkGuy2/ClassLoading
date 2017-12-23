@@ -11,13 +11,18 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.dynamicModification.SimpleInterface;
 
 
-public class UnitTest {
+public class UsageCliMain {
 	static final String a = "twg2/jbcm/main/test/UnitTest";
 	static final String b = "UnitTest-Other";
 
@@ -71,13 +76,13 @@ public class UnitTest {
 
 	public static void interactiveClassLoad() {
 		Scanner in = new Scanner(System.in);
-		ClassFile classFile = null;
+		List<ClassFile> classFiles = new ArrayList<>();
 		int errorCount = 0;
 		int errorMax = 10;
 		String str = null;
 		do {
 			try {
-				classFile = displayMenuGetUserInput(in, classFile);
+				displayMenuGetUserInput(in, classFiles);
 			} catch (IOException e) {
 				errorCount++;
 				if(errorCount > errorMax) { break; }
@@ -87,36 +92,61 @@ public class UnitTest {
 	}
 
 
-	private static ClassFile displayMenuGetUserInput(Scanner in, ClassFile classFile) throws IOException {
+	private static void displayMenuGetUserInput(Scanner in, List<ClassFile> classFiles) throws IOException {
 		FileSystem fs = FileSystems.getDefault();
 		String userDir = System.getProperty("user.dir");
 		if(!userDir.endsWith("\\") && !userDir.endsWith("/")) {
 			userDir += "/";
 		}
 
-		System.out.print("Class file manipulator, options: 'printInfo', 'load', 'modify': ");
+		System.out.print("Class file manipulator " + (classFiles.size() > 0 ? "(" + classFiles.size() + " loaded)" : "") +
+				", options ('printInfo', 'dependencies', 'load', 'modify', 'clear'): ");
 		String input = in.nextLine();
-		Path path = null;
 		switch(input) {
 		case "printInfo":
-			System.out.print("enter file name (relative to '" + userDir + "' or absolute) to print: ");
+			if(classFiles.size() < 1) {
+				System.out.print("enter file name (relative to '" + userDir + "' or absolute) to print: ");
+				input = in.nextLine();
+				File file = getPath(fs, userDir, input).toFile();
+				ClassFile.load(file).print(System.out);
+			}
+			else {
+				classFiles.get(0).print(System.out);
+			}
+			break;
+		case "dependencies":
+			System.out.print("enter dependency name to search for (optional) or nothing to print all dependencies: ");
 			input = in.nextLine();
-			path = getPath(fs, userDir, input);
-			printInfo(path);
-			return null;
+			for(int i = 0, sz = classFiles.size(); i < sz; i++) {
+				printDeps(classFiles.get(i), input, System.out);
+			}
+			break;
 		case "load":
-			System.out.print("enter file name (relative to '" + userDir + "' or absolute) to load: ");
+			System.out.print("enter file/path name (relative to '" + userDir + "' or absolute) to load: ");
 			input = in.nextLine();
-			path = getPath(fs, userDir, input);
-			classFile = ClassFile.load(path.toFile());
-			return classFile;
+			File file = getPath(fs, userDir, input).toFile();
+			List<File> files;
+			if(file.isDirectory()) {
+				files = Arrays.asList(file.listFiles((f) -> f.getName().endsWith(".class")));
+			}
+			else {
+				files = Arrays.asList(file);
+			}
+			for(int i = 0, sz = files.size(); i < sz; i++) {
+				classFiles.add(ClassFile.load(files.get(i)));
+			}
+			System.out.println(files.size() + " class files loaded");
+			break;
 		case "modify":
 			System.out.print("enter modification (currently not implemented): ");
 			input = in.nextLine();
-			modify(classFile, input);
-			return classFile;
+			modify(classFiles.get(0), input);
+			break;
+		case "clear":
+			classFiles.clear();
+			break;
 		default:
-			return null;
+			break;
 		}
 	}
 
@@ -136,8 +166,24 @@ public class UnitTest {
 	}
 
 
-	private static void printInfo(Path path) throws IOException {
-		ClassFile.load(path.toFile()).print(System.out);
+	private static void printDeps(ClassFile classFile, String dependency, PrintStream out) {
+		String depCleaned = (dependency != null && (dependency = dependency.trim()).length() > 0 ? dependency.replace('.', '.') : null);
+		out.println(classFile.getClassIndex().getCpObject() + " dependencies:");
+		int cfIdx = classFile.getClassIndex().getIndex();
+		for(int i = 1, sz = classFile.getConstantPoolCount(); i < sz; i++) { // starting from 1
+			CONSTANT_CP_Info cpInf = classFile.getCpIndex(i).getCpObject();
+			if(i != cfIdx && cpInf instanceof CONSTANT_Class) {
+				CONSTANT_Class cpCls = (CONSTANT_Class)cpInf;
+				if(depCleaned != null) {
+					if(cpCls.getName().getString().contains(depCleaned)) {
+						out.println("  " + cpCls.getName());
+					}
+				}
+				else {
+					out.println("  " + cpCls.getName());
+				}
+			}
+		}
 	}
 
 

@@ -12,12 +12,11 @@ import twg2.jbcm.classFormat.Settings;
  * @since 2013-7-7
  */
 public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
-	public static final int CONSTANT_Utf8_info = 1;
+	public static final byte TAG = 1;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_Utf8_info;
 	short length; // in bytes
-	/* BaseType Character 	Type 	Interpretation
+	/** BaseType Character 	Type 	Interpretation
 	 * B 	byte 	signed byte
 	 * C 	char 	Unicode character
 	 * D 	double 	double-precision floating-point value
@@ -97,13 +96,13 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_Utf8_info);
+		out.writeByte(TAG);
 		out.writeShort(length);
 		out.write(bytes, 0, length);
 	}
@@ -113,7 +112,7 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_Utf8_info) { throw new IllegalStateException("Illegal CONSTANT_Utf8 tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Utf8 tag: " + tagV); }
 		}
 		length = in.readShort();
 		bytes = new byte[length];

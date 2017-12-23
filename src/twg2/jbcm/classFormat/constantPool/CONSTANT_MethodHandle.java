@@ -14,12 +14,10 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-10-6
  */
 public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
-	public static final int CONSTANT_MethodHandle_info = 15;
+	public static final byte TAG = 15;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_MethodHandle_info;
-
-	/* The value of the reference_kind item must be in the range 1 to 9. The value denotes the
+	/** The value of the reference_kind item must be in the range 1 to 9. The value denotes the
 	 * kind of this method handle, which characterizes its bytecode behavior (§5.4.3.5).
 	 * §5.4.3.5. Method Type and Method Handle Resolution:
 	 * Kind 	Description 	Interpretation
@@ -34,9 +32,10 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 	 * 9 	REF_invokeInterface 	invokeinterface C.m:(A*)T
 	 */
 	byte reference_kind;
-	// One of: CONSTANT_Fieldref.class, CONSTANT_Methodref.class, CONSTANT_InterfaceMethodref.class
+	/** One of: CONSTANT_Fieldref.class, CONSTANT_Methodref.class, CONSTANT_InterfaceMethodref.class
+	 */
 	Class<? extends CONSTANT_CP_Info> referenceClass;
-	/* The value of the reference_index item must be a valid index into the constant_pool table.
+	/** The value of the reference_index item must be a valid index into the constant_pool table.
 	 * If the value of the reference_kind item is 1 (REF_getField), 2 (REF_getStatic), 3 (REF_putField),
 	 * or 4 (REF_putStatic), then the constant_pool entry at that index must be a CONSTANT_Fieldref_info (§4.4.2)
 	 * structure representing a field for which a method handle is to be created.
@@ -63,7 +62,7 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -97,13 +96,39 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 	}
 
 
+	@Override
+	public void writeData(DataOutput out) throws IOException {
+		out.writeByte(TAG);
+		out.writeByte(reference_kind);
+		reference_index.writeData(out);
+	}
+
+
+	@Override
+	public void readData(DataInput in) throws IOException {
+		if(!Settings.cpTagRead) {
+			int tagV = in.readByte();
+			if(tagV != TAG) { throw new IllegalStateException("illegal CONSTANT_MethodHandle tag: " + tagV); }
+		}
+		reference_kind = in.readByte();
+		referenceClass = referenceKindType(reference_kind);
+		reference_index = resolver.getCheckCpIndex(in.readShort(), referenceClass);
+	}
+
+
+	@Override
+	public String toString() {
+		return "MethodHandle(15, type=" + referenceClass.getSimpleName() + ", reference_index=" + reference_index.getCpObject() + ")";
+	}
+
+
 	/** Convert a method handle reference kind to its corresponding class type
 	 * @param referenceKind the reference kind value between 1 and 9
 	 * @return {@link CONSTANT_Fieldref} if reference kind is 1, 2, 3, or 4.
 	 * {@link CONSTANT_Methodref} if reference kind is 5, 6, 7, or 8.
 	 * {@link CONSTANT_InterfaceMethodref} if reference kind is 9.
 	 */
-	private Class<? extends CONSTANT_CP_Info> referenceKindType(int referenceKind) {
+	public static Class<? extends CONSTANT_CP_Info> referenceKindType(int referenceKind) {
 		switch(referenceKind) {
 		case 1:
 		case 2:
@@ -120,32 +145,6 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 		default:
 			return null;
 		}
-	}
-
-
-	@Override
-	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_MethodHandle_info);
-		out.write(reference_kind);
-		reference_index.writeData(out);
-	}
-
-
-	@Override
-	public void readData(DataInput in) throws IOException {
-		if(!Settings.cpTagRead) {
-			int tagV = in.readByte();
-			if(tagV != CONSTANT_MethodHandle_info) { throw new IllegalStateException("illegal CONSTANT_MethodHandle tag: " + tagV); }
-		}
-		reference_kind = in.readByte();
-		referenceClass = referenceKindType(reference_kind);
-		reference_index = resolver.getCheckCpIndex(in.readShort(), referenceClass);
-	}
-
-
-	@Override
-	public String toString() {
-		return "MethodHandle(15, type=" + referenceClass.getSimpleName() + ", reference_index=" + reference_index.getCpObject() + ")";
 	}
 
 }

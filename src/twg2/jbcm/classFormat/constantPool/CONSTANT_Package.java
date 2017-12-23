@@ -9,22 +9,21 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>Class</code> info type
+/** Java class file format constant pool <code>Package</code> info type
  * @author TeamworkGuy2
- * @since 2013-7-7
+ * @since 2017-12-22
  */
-public class CONSTANT_Class implements CONSTANT_CP_Info {
-	public static final byte TAG = 7;
+public class CONSTANT_Package implements CONSTANT_CP_Info {
+	public static final byte TAG = 20;
 	ClassFile resolver;
 
-	/** The value of the name_index item must be a valid index into the constant_pool table.
-	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
-	 * representing a valid fully qualified class or interface name (§2.8.1) encoded in internal form (§4.2). 
+	/** The value of the name_index item must be a valid index into the constant_pool table. The constant_pool entry
+	 * at that index must be a CONSTANT_Utf8_info structure representing a valid package name encoded in internal form (§4.2.3).
 	 */
 	CpIndex<CONSTANT_Utf8> name_index;
 
 
-	public CONSTANT_Class(ClassFile resolver) {
+	public CONSTANT_Package(ClassFile resolver) {
 		this.resolver = resolver;
 	}
 
@@ -62,7 +61,7 @@ public class CONSTANT_Class implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != TAG) { throw new IllegalStateException("illegal CONSTANT_Class tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Package tag: " + tagV); }
 		}
 		name_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
 	}
@@ -70,7 +69,8 @@ public class CONSTANT_Class implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "Class(7, name=" + name_index.getCpObject() + ")";
+		CONSTANT_Utf8 name = name_index.getCpObject();
+		return "Package(19, name=" + name.getString() + ")";
 	}
 
 }

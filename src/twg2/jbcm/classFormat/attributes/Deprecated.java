@@ -17,11 +17,11 @@ import twg2.jbcm.modify.IndexUtility;
 public class Deprecated implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "Deprecated";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "Deprecated".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item is 0.
+	/** The value of the attribute_length item is 0. */
 	int attribute_length;
 
 

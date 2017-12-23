@@ -14,11 +14,11 @@ import twg2.jbcm.modify.IndexUtility;
  */
 public class Parameter_Annotations implements ReadWritable {
 	ClassFile resolver;
-	/* The value of the num_annotations item indicates the number of run-time-invisible annotations
+	/** The value of the num_annotations item indicates the number of run-time-invisible annotations
 	 * on the parameter corresponding to the sequence number of this parameter_annotations element.
 	 */
 	short num_annotations;
-	/* Each value of the annotations table represents a single run-time-invisible annotation on the
+	/** Each value of the annotations table represents a single run-time-invisible annotation on the
 	 * parameter corresponding to the sequence number of this parameter_annotations element.
 	 */
 	Annotation[] annotations;
@@ -57,17 +57,17 @@ public class Parameter_Annotations implements ReadWritable {
 
 	@Override
 	public String toString() {
-		StringBuilder strB = new StringBuilder(64);
-		strB.append("Parameter_Annotations([");
+		StringBuilder sb = new StringBuilder(64);
+		sb.append("Parameter_Annotations([");
 		for(int i = 0; i < num_annotations-1; i++) {
-			strB.append(annotations[i].toString());
-			strB.append(", ");
+			sb.append(annotations[i].toString());
+			sb.append(", ");
 		}
 		if(num_annotations > 0) {
-			strB.append(annotations[num_annotations-1].toString());
+			sb.append(annotations[num_annotations-1].toString());
 		}
-		strB.append("])");
-		return strB.toString();
+		sb.append("])");
+		return sb.toString();
 	}
 
 }

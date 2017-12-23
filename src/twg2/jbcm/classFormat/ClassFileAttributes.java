@@ -13,6 +13,8 @@ import twg2.jbcm.classFormat.attributes.LineNumberTable;
 import twg2.jbcm.classFormat.attributes.LocalVariableTable;
 import twg2.jbcm.classFormat.attributes.LocalVariableTypeTable;
 import twg2.jbcm.classFormat.attributes.MethodParameters;
+import twg2.jbcm.classFormat.attributes.ModuleMainClass;
+import twg2.jbcm.classFormat.attributes.ModulePackages;
 import twg2.jbcm.classFormat.attributes.RuntimeInvisibleAnnotations;
 import twg2.jbcm.classFormat.attributes.RuntimeInvisibleParameterAnnotations;
 import twg2.jbcm.classFormat.attributes.RuntimeInvisibleTypeAnnotations;
@@ -81,7 +83,14 @@ public enum ClassFileAttributes {
 	RUNTIME_INVISIBLE_TYPE_ANNOTATIONS("RuntimeInvisibleTypeAnnotations") {
 		@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new RuntimeInvisibleTypeAnnotations(clazz, (short)cpNameIndex); } },
 	METHOD_PARAMETERS("MethodParameters") {
-		@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new MethodParameters(clazz, (short)cpNameIndex); } };
+		@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new MethodParameters(clazz, (short)cpNameIndex); } },
+	// Java SE 9 (2017-12-22)
+	MODULE("Module") {
+		@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new twg2.jbcm.classFormat.attributes.Module(clazz, (short)cpNameIndex); } },
+	MODULE_PACKAGES("ModulePackages") {
+			@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new ModulePackages(clazz, (short)cpNameIndex); } },
+	MODULE_MAIN_CLASS("ModuleMainClass") {
+			@Override public Attribute_Type create(ClassFile clazz, int cpNameIndex, Code code) { return new ModuleMainClass(clazz, (short)cpNameIndex); } };	
 
 
 	private String binaryName;

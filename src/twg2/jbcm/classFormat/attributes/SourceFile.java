@@ -17,13 +17,13 @@ import twg2.jbcm.modify.IndexUtility;
 public class SourceFile implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "SourceFile";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "SourceFile".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item of a SourceFile_attribute structure must be 2.
+	/** The value of the attribute_length item of a SourceFile_attribute structure must be 2. */
 	int attribute_length;
-	/* The value of the sourcefile_index item must be a valid index into the constant_pool table. The constant pool
+	/** The value of the sourcefile_index item must be a valid index into the constant_pool table. The constant pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing a string.
 	 * The string referenced by the sourcefile_index item will be interpreted as indicating the name of the source
 	 * file from which this class file was compiled. It will not be interpreted as indicating the name of a directory

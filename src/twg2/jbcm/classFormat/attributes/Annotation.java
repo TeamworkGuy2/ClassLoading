@@ -16,18 +16,18 @@ import twg2.jbcm.modify.IndexUtility;
  */
 public class Annotation implements ReadWritable {
 	ClassFile resolver;
-	/* The value of the type_index item must be a valid index into the constant_pool table.
+	/** The value of the type_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
 	 * representing a field descriptor representing the annotation type corresponding to
 	 * the annotation represented by this annotation structure. 
 	 */
 	CpIndex<CONSTANT_Utf8> type_index;
-	/* The value of the num_element_value_pairs item gives the number of element-value pairs of
+	/** The value of the num_element_value_pairs item gives the number of element-value pairs of
 	 * the annotation represented by this annotation structure.
 	 * Note that a maximum of 65535 element-value pairs may be contained in a single annotation. 
 	 */
 	short num_element_value_pairs;
-	/* Each value of the element_value_pairs table represents a single element-value pair in the
+	/** Each value of the element_value_pairs table represents a single element-value pair in the
 	 * annotation represented by this annotation structure. Each element_value_pairs entry contains
 	 * the following two items:
 	 * element_name_index,

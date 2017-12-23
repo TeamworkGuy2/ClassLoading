@@ -17,15 +17,14 @@ import twg2.jbcm.modify.IndexUtility;
  */
 public class ConstantValue implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "ConstantValue";
-	private static final int CONSTANT_VALUE_LENGTH = 2;
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "ConstantValue".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item of a ConstantValue_attribute structure must be 2.
+	/** The value of the attribute_length item of a ConstantValue_attribute structure must be 2. */
 	int attribute_length;
-	/* The value of the constantvalue_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the constantvalue_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index gives the constant value represented by this attribute. The constant_pool entry must be of a
 	 * type appropriate to the field, as shown by Table 4.6.
 	 * Field Type 	Entry Type
@@ -35,7 +34,6 @@ public class ConstantValue implements Attribute_Type {
 	 * int, short, char, byte, boolean 	CONSTANT_Integer
 	 * String 	CONSTANT_String
 	 */
-	// CONSTANT_Long.class, CONSTANT_Float.class, CONSTANT_Double.class, CONSTANT_Integer.class, CONSTANT_String.class
 	CpIndex<? extends CONSTANT_CP_Info> constantvalue_index;
 
 
@@ -78,8 +76,8 @@ public class ConstantValue implements Attribute_Type {
 			attribute_name_index = Settings.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
 		}
 		attribute_length = in.readInt();
-		if(attribute_length != CONSTANT_VALUE_LENGTH) {
-			throw new IllegalStateException(ATTRIBUTE_NAME + " attribute length " + attribute_length + " does not equal" + CONSTANT_VALUE_LENGTH);
+		if(attribute_length != 2) {
+			throw new IllegalStateException(ATTRIBUTE_NAME + " attribute length " + attribute_length + " expected to equal " + 2);
 		}
 		constantvalue_index = Settings.readCpConstantIndex(in, resolver);
 	}

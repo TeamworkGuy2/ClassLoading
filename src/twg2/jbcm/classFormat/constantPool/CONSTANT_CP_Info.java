@@ -10,6 +10,7 @@ public interface CONSTANT_CP_Info extends ReadWritable {
 
 	public int getTag();
 
+	@Override
 	public String toString();
 
 }

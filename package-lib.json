@@ -1,5 +1,5 @@
 {
-	"version" : "0.2.0",
+	"version" : "0.3.0",
 	"name" : "class-loading",
 	"description" : "Java class file parsing and manipulation",
 	"homepage" : "https://github.com/TeamworkGuy2/ClassLoading",

@@ -7,7 +7,9 @@ import java.io.IOException;
 import twg2.jbcm.Opcodes;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
+import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
 import twg2.jbcm.modify.IndexUtility;
 
@@ -18,27 +20,27 @@ import twg2.jbcm.modify.IndexUtility;
 public class Code implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "Code";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "Code".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length item indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length item indicates the length of the attribute, excluding the initial six bytes. */
 	int attribute_length;
-	/* The value of the max_stack item gives the maximum depth (§3.6.2) of the operand stack of this method at
+	/** The value of the max_stack item gives the maximum depth (§3.6.2) of the operand stack of this method at
 	 * any point during execution of the method.
 	 */
 	short max_stack;
-	/* The value of the max_locals item gives the number of local variables in the local variable array allocated upon
+	/** The value of the max_locals item gives the number of local variables in the local variable array allocated upon
 	 * invocation of this method, including the local variables used to pass parameters to the method on its invocation.
 	 * The greatest local variable index for a value of type long or double is max_locals-2. The greatest local variable
 	 * index for a value of any other type is max_locals-1.
 	 */
 	short max_locals;
-	/* The value of the code_length item gives the number of bytes in the code array for this method. The value of
+	/** The value of the code_length item gives the number of bytes in the code array for this method. The value of
 	 * code_length must be greater than zero; the code array must not be empty.
 	 */
 	int code_length;
-	/* The code array gives the actual bytes of Java virtual machine code that implement the method.
+	/** The code array gives the actual bytes of Java virtual machine code that implement the method.
 	 * When the code array is read into memory on a byte-addressable machine, if the first byte of the array is
 	 * aligned on a 4-byte boundary, the tableswitch and lookupswitch 32-bit offsets will be 4-byte aligned.
 	 * (Refer to the descriptions of those instructions for more information on the consequences of code array alignment.)
@@ -46,16 +48,16 @@ public class Code implements Attribute_Type {
 	 * section (§4.8), size [code_length], 0 indexed.
 	 */
 	byte[] code;
-	// The value of the exception_table_length item gives the number of entries in the exception_table table.
+	/** The value of the exception_table_length item gives the number of entries in the exception_table table. */
 	short exception_table_length;
-	/* Each entry in the exception_table array describes one exception handler in the code array. The order of the
+	/** Each entry in the exception_table array describes one exception handler in the code array. The order of the
 	 * handlers in the exception_table array is significant. See Section 3.10 for more details,
 	 * size [exception_table_length], 0 indexed.
 	 */
 	ExceptionPoint[] exception_table;
-	// The value of the attributes_count item indicates the number of attributes of the Code attribute. 
+	/** The value of the attributes_count item indicates the number of attributes of the Code attribute. */ 
 	short attributes_count;
-	/* Each value of the attributes table must be an attribute structure (§4.7). A Code attribute can have any number
+	/** Each value of the attributes table must be an attribute structure (§4.7). A Code attribute can have any number
 	 * of optional attributes associated with it.
 	 * Currently, the LineNumberTable (§4.7.8) and LocalVariableTable (§4.7.9) attributes, both of which contain
 	 * debugging information, are defined and used with the Code attribute.
@@ -217,19 +219,20 @@ public class Code implements Attribute_Type {
 		boolean endParentheses = false;
 		int numOperands = 0;
 		int operand = 0;
-		str.append(ATTRIBUTE_NAME + "(stack: " + max_stack + ", locals: " + max_locals + ",\n\t");
-		str.append("code: " + code_length + " [\n");
+		str.append(ATTRIBUTE_NAME).append("(stack: ").append(max_stack)
+			.append(", locals: ").append(max_locals).append(",\n\t")
+			.append("code: ").append(code_length).append(" [\n");
 		for(int i = 0; i < code_length; i++) {
 			numOperands = Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount();
 			// Read following bytes of code and convert them to an operand depending on the number of operands specified for the current command
 			operand = loadOperands(numOperands, code, i);
 			// Special handling for instructions with unpredictable byte code lengths
 			if(numOperands == Opcodes.Const.UNPREDICTABLE) {
-				str.append("\t" + Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount() + "(");
+				str.append("\t").append(Opcodes.getOpcode(code[i] & 0xFF).getOperandCount()).append("(");
 				endParentheses = true;
 				if(Opcodes.WIDE.is(code[i])) {
 					i++; // because wide operations are nested around other operations 
-					numOperands = Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount();
+					numOperands = Opcodes.getOpcode(code[i] & 0xFF).getOperandCount();
 				}
 				else if(Opcodes.TABLESWITCH.is(code[i])) {
 					throw new IllegalStateException("tableswitch code handling not implemented");
@@ -238,7 +241,13 @@ public class Code implements Attribute_Type {
 					throw new IllegalStateException("lookupswitch code handling not implemented");
 				}
 			}
-			str.append("\t" + Opcodes.getOpcode((int)(code[i] & 0xFF)).name() + ((operand > 0 && operand < resolver.getConstantPoolCount()) ? "(" + numOperands + ", " + resolver.getCpIndex((short)operand).getCpObject() + "),\n" : ",\n"));
+			str.append("\t").append(Opcodes.getOpcode(code[i] & 0xFF).name());
+			if(operand > 0 && operand < resolver.getConstantPoolCount()) {
+				str.append("(").append(numOperands).append(", ").append(resolver.getCpIndex((short)operand).getCpObject()).append("),\n");
+			}
+			else {
+				str.append(",\n");
+			}
 			if(endParentheses == true) {
 				str.append(")\n");
 				endParentheses = false;
@@ -247,18 +256,18 @@ public class Code implements Attribute_Type {
 		}
 		str.append("\n\t],\n\t");
 
-		str.append("exceptions: " + exception_table_length + " [");
+		str.append("exceptions: ").append(exception_table_length).append(" [");
 		if(exception_table_length > 0) { str.append("\n\t"); }
 		for(int i = 0; i < exception_table_length-1; i++) {
-			str.append(exception_table[i] + ",\n\t");
+			str.append(exception_table[i]).append(",\n\t");
 		}
 		if(exception_table_length > 0) { str.append(exception_table[exception_table_length-1]); }
 		str.append("],\n\t");
 
-		str.append("attributes: " + attributes_count + " [");
+		str.append("attributes: ").append(attributes_count).append(" [");
 		if(attributes_count > 0) { str.append("\n\t"); }
 		for(int i = 0; i < attributes_count-1; i++) {
-			str.append(attributes[i] + ",\n\t");
+			str.append(attributes[i]).append(",\n\t");
 		}
 		if(attributes_count > 0) { str.append(attributes[attributes_count-1]); }
 		str.append("])");
@@ -266,11 +275,83 @@ public class Code implements Attribute_Type {
 	}
 
 
-	private int loadOperands(int numOperands, byte[] code, int index) {
+	private static int loadOperands(int numOperands, byte[] code, int index) {
 		return (numOperands > 3 ? (((code[index+1] & 0xFF) << 24) | ((code[index+2] & 0xFF) << 16) | ((code[index+3] & 0xFF) << 8) | (code[index+4] & 0xFF)) :
 			(numOperands > 2 ? (((code[index+1] & 0xFF) << 16) | ((code[index+2] & 0xFF) << 8) | (code[index+3] & 0xFF)) :
 				(numOperands > 1 ? (((code[index+1] & 0xFF) << 8) | (code[index+2] & 0xFF)) :
 					(numOperands > 0 ? ((code[index+1] & 0xFF)) : -1))));
+	}
+
+
+
+	/** A Java class file format Attribute of type <code>Exceptions</code>
+	 * @author TeamworkGuy2
+	 * @since 2013-7-7
+	 */
+	public static class ExceptionPoint implements ReadWritable {
+		Code parent;
+		/* Each entry in the exception_table array describes one exception handler in the code array. The order of the
+		 * handlers in the exception_table array is significant. See Section 3.10 for more details.
+		 * Each exception_table entry contains the following four items:
+		 * start_pc, end_pc
+		 * The values of the two items start_pc and end_pc indicate the ranges in the code array at which the exception
+		 * handler is active. The value of start_pc must be a valid index into the code array of the opcode of an instruction.
+		 * The value of end_pc either must be a valid index into the code array of the opcode of an instruction or must be
+		 * equal to code_length, the length of the code array. The value of start_pc must be less than the value of end_pc.
+		 * The start_pc is inclusive and end_pc is exclusive; that is, the exception handler must be active while the program
+		 * counter is within the interval [start_pc, end_pc).4
+		 */
+		short start_pc;
+		short end_pc;
+		/** The value of the handler_pc item indicates the start of the exception handler. The value of the item must be
+		 * a valid index into the code array and must be the index of the opcode of an instruction.
+		 */
+		short handler_pc;
+		/** If the value of the catch_type item is nonzero, it must be a valid index into the constant_pool table. The
+		 * constant_pool entry at that index must be a CONSTANT_Class_info (§4.4.1) structure representing a class of
+		 * exceptions that this exception handler is designated to catch. This class must be the class Throwable or one
+		 * of its subclasses. The exception handler will be called only if the thrown exception is an instance of the
+		 * given class or one of its subclasses.
+		 * If the value of the catch_type item is zero, this exception handler is called for all exceptions. This is used
+		 * to implement finally (see Section 7.13, "Compiling finally").
+		 */
+		CpIndex<CONSTANT_Class> catch_type;
+
+
+		public ExceptionPoint(Code codeParent) {
+			this.parent = codeParent;
+		}
+
+
+		@Override
+		public void changeCpIndex(short oldIndex, short newIndex) {
+			IndexUtility.indexChange(catch_type, oldIndex, newIndex);
+		}
+
+
+		@Override
+		public void writeData(DataOutput out) throws IOException {
+			out.writeShort(start_pc);
+			out.writeShort(end_pc);
+			out.writeShort(handler_pc);
+			catch_type.writeData(out);
+		}
+
+
+		@Override
+		public void readData(DataInput in) throws IOException {
+			start_pc = in.readShort();
+			end_pc = in.readShort();
+			handler_pc = in.readShort();
+			catch_type = parent.getResolver().getCheckCpIndex(in.readShort(), CONSTANT_Class.class, true);
+		}
+
+
+		@Override
+		public String toString() {
+			return "Exception(start=" + start_pc + ", end=" + end_pc + ", handler=" + handler_pc + ", catch_type=" + (catch_type.getIndex() > 0 ? catch_type.getCpObject() : "finally") + ")";
+		}
+
 	}
 
 }

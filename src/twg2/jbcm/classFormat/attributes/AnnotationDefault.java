@@ -17,13 +17,13 @@ import twg2.jbcm.modify.IndexUtility;
 public class AnnotationDefault implements Attribute_Type {
 	public static final String ATTRIBUTE_NAME = "AnnotationDefault";
 	ClassFile resolver;
-	/* The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
+	/** The value of the attribute_name_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing the string "AnnotationDefault".
 	 */
 	CpIndex<CONSTANT_Utf8> attribute_name_index;
-	// The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes.
+	/** The value of the attribute_length indicates the length of the attribute, excluding the initial six bytes. */
 	int attribute_length;
-	/* The default_value item represents the default value of the annotation type element whose default
+	/** The default_value item represents the default value of the annotation type element whose default
 	 * value is represented by this AnnotationDefault attribute. 
 	 */
 	Element_Value default_value;

@@ -12,10 +12,12 @@ import twg2.jbcm.classFormat.Settings;
  * @since 2013-7-7
  */
 public class CONSTANT_Long implements CONSTANT_CP_Info {
-	public static final int CONSTANT_Long_info = 5;
+	public static final byte TAG = 5;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_Long_info;
+	/** The unsigned high_bytes and low_bytes items of the CONSTANT_Long_info structure together represent the value of the long constant.
+	 * Where the bytes of each of high_bytes and low_bytes are stored in big-endian (high byte first) order.
+	 */
 	int high_bytes;
 	int low_bytes;
 
@@ -27,7 +29,7 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -38,7 +40,7 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_Long_info);
+		out.writeByte(TAG);
 		out.writeInt(high_bytes);
 		out.writeInt(low_bytes);
 	}
@@ -48,7 +50,7 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_Long_info) { throw new IllegalStateException("Illegal CONSTANT_Long tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Long tag: " + tagV); }
 		}
 		high_bytes = in.readInt();
 		low_bytes = in.readInt();
@@ -57,7 +59,7 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "CONSTANT_Long(5, " + high_bytes + ", " + low_bytes + "=" + ((long)high_bytes << 32 | (long)low_bytes) + ")";
+		return "Long(5, " + high_bytes + ", " + low_bytes + "=" + ((long)high_bytes << 32 | (long)low_bytes) + ")";
 	}
 
 }

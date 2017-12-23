@@ -12,10 +12,13 @@ import twg2.jbcm.classFormat.Settings;
  * @since 2013-7-7
  */
 public class CONSTANT_Double implements CONSTANT_CP_Info {
-	public static final int CONSTANT_Double_info = 6;
+	public static final int TAG = 6;
 	ClassFile resolver;
 
-	byte tag = CONSTANT_Double_info;
+	/** The high_bytes and low_bytes items of the CONSTANT_Double_info structure together represent the double value in IEEE 754
+	 * floating-point double format (§2.3.2). The bytes of each item are stored in big-endian (high byte first) order.
+	 * Where the bytes of each of high_bytes and low_bytes are stored in big-endian (high byte first) order.
+	 */
 	int high_bytes;
 	int low_bytes;
 
@@ -27,7 +30,7 @@ public class CONSTANT_Double implements CONSTANT_CP_Info {
 
 	@Override
 	public int getTag() {
-		return tag;
+		return TAG;
 	}
 
 
@@ -38,7 +41,7 @@ public class CONSTANT_Double implements CONSTANT_CP_Info {
 
 	@Override
 	public void writeData(DataOutput out) throws IOException {
-		out.write(CONSTANT_Double_info);
+		out.writeByte(TAG);
 		out.writeInt(high_bytes);
 		out.writeInt(low_bytes);
 	}
@@ -48,7 +51,7 @@ public class CONSTANT_Double implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != CONSTANT_Double_info) { throw new IllegalStateException("Illegal CONSTANT_Double tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Double tag: " + tagV); }
 		}
 		high_bytes = in.readInt();
 		low_bytes = in.readInt();
@@ -57,7 +60,7 @@ public class CONSTANT_Double implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "CONSTANT_Double(6, " + high_bytes + ", " + low_bytes + ")";
+		return "Double(6, " + high_bytes + ", " + low_bytes + ")";
 	}
 
 }

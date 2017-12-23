@@ -252,8 +252,8 @@ public final class IoUtility {
 
 
 	/** A default implementation of {@link CodeOffsetChanger}.
-	 * The {@link #accept(byte[], int, int)} in this implementation simply calls {@code IoUtility.shiftOffset(...)}
-	 * using the parameters from the constructor and the {@link CodeOffsetChanger#accept(byte[], int, int)} method.
+	 * The {@link CodeOffsetChanger#shiftIndex(byte[], int, int)} in this implementation simply calls {@code IoUtility.shiftOffset(...)}
+	 * using the parameters from the constructor and the {@link CodeOffsetChanger#shiftIndex(byte[], int, int)} method.
 	 * @author TeamworkGuy2
 	 * @since 2014-419
 	 */

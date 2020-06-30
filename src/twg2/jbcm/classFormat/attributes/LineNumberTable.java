@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.ClassFileAttributes;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
@@ -34,7 +35,7 @@ public class LineNumberTable implements Attribute_Type {
 
 
 	public LineNumberTable(ClassFile resolver, Code codeParent, short attributeNameIndex) {
-		this.attribute_name_index = Settings.initAttributeNameIndex(attributeNameIndex, resolver);
+		this.attribute_name_index = resolver.getAttributeNameIndex(attributeNameIndex);
 		this.resolver = resolver;
 		this.parent = codeParent;
 	}
@@ -72,8 +73,8 @@ public class LineNumberTable implements Attribute_Type {
 
 	@Override
 	public void readData(DataInput in) throws IOException {
-		if(Settings.doReadAttributeName()) {
-			attribute_name_index = Settings.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
+		if(Settings.readAttributeName) {
+			attribute_name_index = ClassFileAttributes.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
 		}
 		attribute_length = in.readInt();
 		line_number_table_length = in.readShort();
@@ -89,10 +90,10 @@ public class LineNumberTable implements Attribute_Type {
 	public String toString() {
 		StringBuilder str = new StringBuilder();
 		str.append(ATTRIBUTE_NAME + "(line numbers: " + line_number_table_length + " [");
-		for(int i = 0; i < line_number_table_length-1; i++) {
+		for(int i = 0; i < line_number_table_length - 1; i++) {
 			str.append(line_number_table[i] + ", ");
 		}
-		if(line_number_table_length > 0) { str.append(line_number_table[line_number_table_length-1]); }
+		if(line_number_table_length > 0) { str.append(line_number_table[line_number_table_length - 1]); }
 		str.append("])");
 		return str.toString();
 	}

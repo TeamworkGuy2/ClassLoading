@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import twg2.jbcm.Opcodes;
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.ClassFileAttributes;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
@@ -70,7 +71,7 @@ public class Code implements Attribute_Type {
 
 
 	public Code(ClassFile resolver, short attributeNameIndex) {
-		this.attribute_name_index = Settings.initAttributeNameIndex(attributeNameIndex, resolver);
+		this.attribute_name_index = resolver.getAttributeNameIndex(attributeNameIndex);
 		this.resolver = resolver;
 	}
 
@@ -105,12 +106,32 @@ public class Code implements Attribute_Type {
 	}
 
 
+	public Attribute_Type[] getAttributes() {
+		return attributes;
+	}
+
+
+	public ExceptionPoint[] getExceptionTable() {
+		return exception_table;
+	}
+
+
+	public int getMaxStack() {
+		return max_stack;
+	}
+
+
+	public int getMaxLocals() {
+		return max_locals;
+	}
+
+
 	public void setCode(byte[] instructions) {
 		byte[] oldCode = this.code;
 		this.code = instructions;
 		this.code_length = instructions.length;
 		// TODO figure out how to calculate shift for entire code
-		this.attribute_length += (instructions.length-oldCode.length);
+		this.attribute_length += (instructions.length - oldCode.length);
 		updateOffsets(1, oldCode.length, 0);
 	}
 
@@ -190,8 +211,8 @@ public class Code implements Attribute_Type {
 
 	@Override
 	public void readData(DataInput in) throws IOException {
-		if(Settings.doReadAttributeName()) {
-			attribute_name_index = Settings.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
+		if(Settings.readAttributeName) {
+			attribute_name_index = ClassFileAttributes.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
 		}
 		attribute_length = in.readInt();
 		max_stack = in.readShort();
@@ -208,31 +229,38 @@ public class Code implements Attribute_Type {
 		attributes_count = in.readShort();
 		attributes = new Attribute_Type[attributes_count];
 		for(int i = 0; i < attributes_count; i++) {
-			attributes[i] = Settings.loadAttributeObject(in, resolver, this);
+			attributes[i] = ClassFileAttributes.loadAttributeObject(in, resolver, this);
 		}
 	}
 
 
 	@Override
 	public String toString() {
-		StringBuilder str = new StringBuilder();
-		boolean endParentheses = false;
-		int numOperands = 0;
-		int operand = 0;
+		StringBuilder dst = new StringBuilder();
+		toClassString("\t", dst);
+		return dst.toString();
+	}
+
+
+	public void toClassString(String tab, StringBuilder str) {
 		str.append(ATTRIBUTE_NAME).append("(stack: ").append(max_stack)
-			.append(", locals: ").append(max_locals).append(",\n\t")
+			.append(", locals: ").append(max_locals).append(",\n").append(tab)
 			.append("code: ").append(code_length).append(" [\n");
+
 		for(int i = 0; i < code_length; i++) {
-			numOperands = Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount();
-			// Read following bytes of code and convert them to an operand depending on the number of operands specified for the current command
-			operand = loadOperands(numOperands, code, i);
+			Opcodes opc = Opcodes.get(code[i] & 0xFF);
+			boolean isWide = false;
+			int numOperands = opc.getOperandCount();
+			// Read following bytes of code and convert them to an operand depending on the current instruction
+			int operand = loadOperands(numOperands, code, i);
 			// Special handling for instructions with unpredictable byte code lengths
 			if(numOperands == Opcodes.Const.UNPREDICTABLE) {
-				str.append("\t").append(Opcodes.getOpcode(code[i] & 0xFF).getOperandCount()).append("(");
-				endParentheses = true;
 				if(Opcodes.WIDE.is(code[i])) {
-					i++; // because wide operations are nested around other operations 
-					numOperands = Opcodes.getOpcode(code[i] & 0xFF).getOperandCount();
+					// TODO doesn't properly read extra wide operand bytes
+					isWide = true;
+					i++; // because wide instructions are wrapped around other instructions
+					opc = Opcodes.get(code[i] & 0xFF);
+					numOperands = opc.getOperandCount();
 				}
 				else if(Opcodes.TABLESWITCH.is(code[i])) {
 					throw new IllegalStateException("tableswitch code handling not implemented");
@@ -241,37 +269,48 @@ public class Code implements Attribute_Type {
 					throw new IllegalStateException("lookupswitch code handling not implemented");
 				}
 			}
-			str.append("\t").append(Opcodes.getOpcode(code[i] & 0xFF).name());
-			if(operand > 0 && operand < resolver.getConstantPoolCount()) {
-				str.append("(").append(numOperands).append(", ").append(resolver.getCpIndex((short)operand).getCpObject()).append("),\n");
+
+			str.append(tab).append(instructionIndex(i)).append(isWide ? "WIDE " : "").append(opc.displayName());
+
+			if(operand > 0) {
+				if(opc.hasBehavior(Opcodes.Type.CP_INDEX) && operand < resolver.getConstantPoolCount()) {
+					str.append(' ').append(resolver.getCpIndex((short)operand).getCpObject().toShortString()).append(" [").append(operand).append(']');
+				}
+				else if(opc.hasBehavior(Opcodes.Type.JUMP)) {
+					str.append(' ').append(i + operand);
+				}
+				//else if(opc.hasBehavior(Opcodes.Type.VAR_STORE)) { ... }
+				//else if(opc.hasBehavior(Opcodes.Type.VAR_LOAD)) { ... }
+				//else if(opc.hasBehavior(Opcodes.Type.ARRAY_STORE)) { ... }
+				//else if(opc.hasBehavior(Opcodes.Type.ARRAY_LOAD)) { ... }
+				else {
+					str.append(' ').append(operand).append(" 0x").append(Integer.toHexString(operand));
+				}
+				str.append("\n");
 			}
 			else {
-				str.append(",\n");
+				str.append("\n");
 			}
-			if(endParentheses == true) {
-				str.append(")\n");
-				endParentheses = false;
-			}
-			i+= (numOperands < 0) ? 0 : numOperands;
+
+			i += (numOperands < 0 ? 0 : numOperands);
 		}
-		str.append("\n\t],\n\t");
+		str.append(tab).append("],\n").append(tab);
 
 		str.append("exceptions: ").append(exception_table_length).append(" [");
-		if(exception_table_length > 0) { str.append("\n\t"); }
-		for(int i = 0; i < exception_table_length-1; i++) {
-			str.append(exception_table[i]).append(",\n\t");
+		if(exception_table_length > 0) { str.append("\n").append(tab); }
+		for(int i = 0; i < exception_table_length - 1; i++) {
+			str.append(exception_table[i]).append(",\n").append(tab);
 		}
-		if(exception_table_length > 0) { str.append(exception_table[exception_table_length-1]); }
-		str.append("],\n\t");
+		if(exception_table_length > 0) { str.append(exception_table[exception_table_length - 1]); }
+		str.append("],\n").append(tab);
 
 		str.append("attributes: ").append(attributes_count).append(" [");
-		if(attributes_count > 0) { str.append("\n\t"); }
-		for(int i = 0; i < attributes_count-1; i++) {
-			str.append(attributes[i]).append(",\n\t");
+		if(attributes_count > 0) { str.append("\n").append(tab); }
+		for(int i = 0; i < attributes_count - 1; i++) {
+			str.append(attributes[i]).append(",\n").append(tab);
 		}
-		if(attributes_count > 0) { str.append(attributes[attributes_count-1]); }
+		if(attributes_count > 0) { str.append(attributes[attributes_count - 1]); }
 		str.append("])");
-		return str.toString();
 	}
 
 
@@ -280,6 +319,19 @@ public class Code implements Attribute_Type {
 			(numOperands > 2 ? (((code[index+1] & 0xFF) << 16) | ((code[index+2] & 0xFF) << 8) | (code[index+3] & 0xFF)) :
 				(numOperands > 1 ? (((code[index+1] & 0xFF) << 8) | (code[index+2] & 0xFF)) :
 					(numOperands > 0 ? ((code[index+1] & 0xFF)) : -1))));
+	}
+
+
+	private static String instructionIndex(int instPtr) {
+		if(instPtr < 10) {
+			return "  " + instPtr + "  ";
+		}
+		else if(instPtr < 100) {
+			return " " + instPtr + "  ";
+		}
+		else {
+			return Integer.toString(instPtr) + "  ";
+		}
 	}
 
 

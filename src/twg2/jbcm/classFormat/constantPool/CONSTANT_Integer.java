@@ -7,7 +7,8 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Settings;
 
-/** Java class file format constant pool <code>Integer</code> info type
+/** Java class file format constant pool <code>Integer</code> info type.<br>
+ * Constant value = 3, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -51,6 +52,12 @@ public class CONSTANT_Integer implements CONSTANT_CP_Info {
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Integer tag: " + tagV); }
 		}
 		bytes = in.readInt();
+	}
+
+
+	@Override
+	public String toShortString() {
+		return Integer.toString(bytes);
 	}
 
 

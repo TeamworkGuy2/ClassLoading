@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -20,6 +22,9 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.dynamicModification.SimpleInterface;
+import twg2.jbcm.runtimeLoading.CompileSource;
+import twg2.jbcm.toSource.ClassFileToSource;
+import twg2.jbcm.toSource.SourceWriter;
 
 
 public class UsageCliMain {
@@ -94,37 +99,66 @@ public class UsageCliMain {
 
 	private static void displayMenuGetUserInput(Scanner in, List<ClassFile> classFiles) throws IOException {
 		FileSystem fs = FileSystems.getDefault();
-		String userDir = System.getProperty("user.dir");
-		if(!userDir.endsWith("\\") && !userDir.endsWith("/")) {
-			userDir += "/";
+		String classpath = System.getProperty("user.dir");
+		if(!classpath.endsWith("\\") && !classpath.endsWith("/")) {
+			classpath += "/";
 		}
 
 		System.out.print("Class file manipulator " + (classFiles.size() > 0 ? "(" + classFiles.size() + " loaded)" : "") +
-				", options ('printInfo', 'dependencies', 'load', 'modify', 'clear'): ");
+				", options ('classpath', 'printInfo', 'printClass', 'decompile', 'dependencies', 'load', 'modify', 'clear'): ");
 		String input = in.nextLine();
+		ClassFile cls = null;
+		SourceWriter writer = null;
+
 		switch(input) {
-		case "printInfo":
+		case "classpath":
+			System.out.print("enter classpath to use for 'load' commands: ");
+			input = in.nextLine();
+			classpath = input;
+		case "decompile":
 			if(classFiles.size() < 1) {
-				System.out.print("enter file name (relative to '" + userDir + "' or absolute) to print: ");
+				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print source: ");
 				input = in.nextLine();
-				File file = getPath(fs, userDir, input).toFile();
-				ClassFile.load(file).print(System.out);
+				File file = getClassPath(fs, classpath, input).toFile();
+				cls = ClassFile.load(file);
 			}
 			else {
-				classFiles.get(0).print(System.out);
+				cls = classFiles.get(0);
 			}
+			writer = new SourceWriter("\t", "\n");
+			ClassFileToSource.toSource(cls, writer, true);
+			System.out.println(writer.toString());
 			break;
-		case "dependencies":
-			System.out.print("enter dependency name to search for (optional) or nothing to print all dependencies: ");
-			input = in.nextLine();
-			for(int i = 0, sz = classFiles.size(); i < sz; i++) {
-				printDeps(classFiles.get(i), input, System.out);
+		case "printClass":
+			if(classFiles.size() < 1) {
+				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print class: ");
+				input = in.nextLine();
+				File file = getClassPath(fs, classpath, input).toFile();
+				cls = ClassFile.load(file);
 			}
+			else {
+				cls = classFiles.get(0);
+			}
+			writer = new SourceWriter("  ", "\n");
+			ClassFileToSource.toSource(cls, writer, false);
+			System.out.println(writer.toString());
+			break;
+		case "printInfo":
+			if(classFiles.size() < 1) {
+				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print: ");
+				input = in.nextLine();
+				File file = getClassPath(fs, classpath, input).toFile();
+				cls = ClassFile.load(file);
+			}
+			else {
+				cls = classFiles.get(0);
+			}
+			cls.print(System.out);
 			break;
 		case "load":
-			System.out.print("enter file/path name (relative to '" + userDir + "' or absolute) to load: ");
+			System.out.print("enter file/path name (relative to '" + classpath + "' or absolute) to load: ");
 			input = in.nextLine();
-			File file = getPath(fs, userDir, input).toFile();
+			File file = getClassPath(fs, classpath, input).toFile();
 			List<File> files;
 			if(file.isDirectory()) {
 				files = Arrays.asList(file.listFiles((f) -> f.getName().endsWith(".class")));
@@ -137,10 +171,18 @@ public class UsageCliMain {
 			}
 			System.out.println(files.size() + " class files loaded");
 			break;
+		case "dependencies":
+			System.out.print("enter dependency name to search for (optional) or nothing to print all dependencies: ");
+			input = in.nextLine();
+			for(int i = 0, sz = classFiles.size(); i < sz; i++) {
+				printDeps(classFiles.get(i), input, System.out);
+			}
+			break;
 		case "modify":
 			System.out.print("enter modification (currently not implemented): ");
 			input = in.nextLine();
-			modify(classFiles.get(0), input);
+			// TODO modify(classFiles.get(0), input);
+			System.out.println("ERROR: 'modify' is not yet implemented");
 			break;
 		case "clear":
 			classFiles.clear();
@@ -151,16 +193,17 @@ public class UsageCliMain {
 	}
 
 
-	private static Path getPath(FileSystem fs, String dir, String file) {
+	private static Path getClassPath(FileSystem fs, String dir, String file) {
+		String fileNorm = file.endsWith(".class") ? file : file.replace('.', '/') + ".class";
 		Path tmp = null;
-		if(Files.exists((tmp = fs.getPath(file)), LinkOption.NOFOLLOW_LINKS)) {
+		if(Files.exists((tmp = fs.getPath(fileNorm)), LinkOption.NOFOLLOW_LINKS)) {
 			return tmp;
 		}
-		else if(Files.exists((tmp = fs.getPath(file)), LinkOption.NOFOLLOW_LINKS)) {
+		else if(Files.exists((tmp = fs.getPath(dir, fileNorm)), LinkOption.NOFOLLOW_LINKS)) {
 			return tmp;
 		}
 		else {
-			System.out.println("unknown path: " + file + ", or " + dir + file);
+			System.out.println("unknown path: " + fileNorm + ", or " + dir + fileNorm);
 			return null;
 		}
 	}
@@ -187,13 +230,27 @@ public class UsageCliMain {
 	}
 
 
-	private static void modify(ClassFile classFile, String inputCommand) {
-		
+	private static void compileSourceToClass(File srcJavaFile, File dstClassFile) throws MalformedURLException, ClassNotFoundException {
+		URL path = new File("res/compile").toURI().toURL();
+		URL sourceClassPath = new File("res/compile/source_files").toURI().toURL();
+		URL destinationClassPath = new File("res/compile/class_files").toURI().toURL();
+		URL[] urls = new URL[] {
+			new File("res/compile/source_files/compile/Hello.java").toURI().toURL(),
+		};
+		CompileSource.compile(path, sourceClassPath, destinationClassPath, urls);
+
+		RuntimeReloadMain reload = new RuntimeReloadMain();
+		reload.loadRun("res/compile/class_files", "compile.Hello", "run", (String[])null);
+
+		//Runnable thing = (Runnable)classes[0].newInstance();
+		//thing.run();
 	}
 
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		interactiveClassLoad();
+
+		// compileSourceToClass();
 
 		//File file = new File("bin/twg2.jbcm.classFormat/test/UnitTest.class");
 		//File file = new File("C:/Users/TeamworkGuy2/Downloads/apache-tomcat-7.0.42-windows-x64/apache-tomcat-7.0.42-windows-x64/webapps/Project5/WEB-INF/classes/threeTierWebApplication/ProxyTable.class");
@@ -203,19 +260,6 @@ public class UsageCliMain {
 		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/Miscellaneous/bin/classTests/Thing.class");
 
 		//UnitTest.loadPrintClassInfo(System.out/*new PrintStream(new File("output-parsed.txt"))*/, file);
-
-		/*
-		URL path = new File("res/compile").toURI().toURL();
-		URL sourceClassPath = new File("res/compile/source_files").toURI().toURL();
-		URL destinationClassPath = new File("res/compile/class_files").toURI().toURL();
-		URL[] urls = new URL[] {
-			new File("res/compile/source_files/compile/Hello.java").toURI().toURL(),
-		};
-		CompileSource c = new CompileSource();
-		Class<?>[] classes = c.compile(path, sourceClassPath, destinationClassPath, urls);
-		//Runnable thing = (Runnable)classes[0].newInstance();
-		//thing.run();
-		*/
 	}
 
 }

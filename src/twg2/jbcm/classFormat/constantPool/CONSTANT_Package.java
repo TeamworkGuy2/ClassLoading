@@ -9,7 +9,12 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>Package</code> info type
+/** Java class file format constant pool <code>Package</code> info type.<br>
+ * Constant value = 20, class version = 53.0, Java SE = 9<br>
+ * <br>
+ * A CONSTANT_Package_info structure is permitted only in the constant pool of a class file that declares a module,
+ * that is, a ClassFile structure where the access_flags item has the ACC_MODULE flag set. In all other class files,
+ * a CONSTANT_Package_info structure is illegal.
  * @author TeamworkGuy2
  * @since 2017-12-22
  */
@@ -63,7 +68,13 @@ public class CONSTANT_Package implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Package tag: " + tagV); }
 		}
-		name_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		name_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return "package " + name_index.getCpObject().toShortString();
 	}
 
 

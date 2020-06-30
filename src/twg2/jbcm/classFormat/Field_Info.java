@@ -16,6 +16,25 @@ import twg2.jbcm.modify.IndexUtility;
  * @since 2013-7-7
  */
 public class Field_Info implements Externalizable, ReadWritable {
+	/** Declared public; may be accessed from outside its package. */
+	public static final int ACC_PUBLIC = 0x0001;
+	/** Declared private; usable only within the defining class. */
+	public static final int ACC_PRIVATE = 0x0002;
+	/** Declared protected; may be accessed within subclasses. */
+	public static final int ACC_PROTECTED = 0x0004;
+	/** Declared static. */
+	public static final int ACC_STATIC = 0x0008;
+	/** Declared final; no further assignment after initialization. */
+	public static final int ACC_FINAL = 0x0010;
+	/** Declared volatile; cannot be cached. */
+	public static final int ACC_VOLATILE = 0x0040;
+	/** Declared transient; not written or read by a persistent object manager. */
+	public static final int ACC_TRANSIENT = 0x0080;
+	/** Declared synthetic; not present in the source code. */
+	public static final int ACC_SYNTHETIC = 0x1000;
+	/** Declared as an element of an enum. */
+	public static final int ACC_ENUM = 0x4000;
+
 	ClassFile resolver;
 	/* The value of the access_flags item is a mask of flags used to denote access permission to and properties of
 	 * this field. The interpretation of each flag, when set, is as shown in Table 4.4.
@@ -30,6 +49,8 @@ public class Field_Info implements Externalizable, ReadWritable {
 	 * ACC_FINAL 	0x0010 	Declared final; no further assignment after initialization.
 	 * ACC_VOLATILE 	0x0040 	Declared volatile; cannot be cached.
 	 * ACC_TRANSIENT 	0x0080 	Declared transient; not written or read by a persistent object manager.
+	 * ACC_SYNTHETIC 	0x1000 	Declared synthetic; not present in the source code.
+	 * ACC_ENUM 	0x4000 	Declared as an element of an enum.
 	 */
 	short access_flags;
 	/* The value of the name_index item must be a valid index into the constant_pool table.
@@ -71,6 +92,16 @@ public class Field_Info implements Externalizable, ReadWritable {
 	}
 
 
+	public CONSTANT_Utf8 getName() {
+		return name_index.getCpObject();
+	}
+
+
+	public CONSTANT_Utf8 getDescriptor() {
+		return descriptor_index.getCpObject();
+	}
+
+
 	public Attribute_Type getAttribute(int index) {
 		return attributes[index];
 	}
@@ -78,6 +109,11 @@ public class Field_Info implements Externalizable, ReadWritable {
 
 	public int getAttributeCount() {
 		return attributes_count;
+	}
+
+
+	public int getAccessFlags() {
+		return access_flags & 0xFFFF;
 	}
 
 
@@ -101,7 +137,7 @@ public class Field_Info implements Externalizable, ReadWritable {
 		attributes_count = in.readShort();
 		attributes = new Attribute_Type[attributes_count];
 		for(int i = 0; i < attributes_count; i++) {
-			attributes[i] = Settings.loadAttributeObject(in, resolver, null);
+			attributes[i] = ClassFileAttributes.loadAttributeObject(in, resolver, null);
 		}
 	}
 

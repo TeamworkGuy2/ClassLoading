@@ -1,5 +1,8 @@
 package twg2.jbcm.classFormat;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Double;
@@ -36,7 +39,28 @@ public enum ConstantPoolTag {
 	METHOD_TYPE			((byte)16) { @Override public CONSTANT_MethodType create(ClassFile clazz) { return new CONSTANT_MethodType(clazz); } },
 	INVOKE_DYNAMIC		((byte)18) { @Override public CONSTANT_InvokeDynamic create(ClassFile clazz) { return new CONSTANT_InvokeDynamic(clazz); } };
 
+	private static ConstantPoolTag[] tagArray;
+
 	private byte tag;
+
+
+	static {
+		ConstantPoolTag[] tags = ConstantPoolTag.values();
+		int max = 0;
+
+		for(ConstantPoolTag tag : tags) {
+			int cpTag = tag.getTag();
+			if(cpTag > max) { max = cpTag; }
+		}
+
+		// store the tag enum values in an array based on tag number
+		tagArray = new ConstantPoolTag[max + 1];
+		// Fill the array with the tags
+		for(ConstantPoolTag tag : tags) {
+			tagArray[tag.getTag()] = tag;
+		}
+	}
+
 
 	ConstantPoolTag(byte tag) {
 		this.tag = tag;
@@ -64,6 +88,25 @@ public enum ConstantPoolTag {
 	 */
 	public int getTag() {
 		return tag;
+	}
+
+
+	/** Java class file format <code>ConstantPool</code> info type loading method
+	 * @author TeamworkGuy2
+	 * @since 2013-7-7
+	 */
+	public static final CONSTANT_CP_Info loadConstantPoolObject(DataInput in, ClassFile resolver) throws IOException {
+		CONSTANT_CP_Info cpObj = null;
+		int tag = in.readByte();
+
+		try {
+			cpObj = tagArray[tag].create(resolver);
+		} catch(ArrayIndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Unkown constant pool tag: " + tag);
+		}
+
+		cpObj.readData(in);
+		return cpObj;
 	}
 
 }

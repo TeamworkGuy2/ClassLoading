@@ -72,6 +72,11 @@ public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable {
 	}
 
 
+	public boolean checkCpType(Class<? extends CONSTANT_CP_Info> clas) {
+		return this.clas.isAssignableFrom(clas);
+	}
+
+
 	public void setCpObject(T obj) {
 		if(!isInitialized()) {
 			if(!(obj instanceof CONSTANT_CP_Info)) {

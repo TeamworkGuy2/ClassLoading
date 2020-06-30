@@ -9,7 +9,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>MethodHandle</code> info type
+/** Java class file format constant pool <code>MethodHandle</code> info type.<br>
+ * Constant value = 15, class version = 51.0, Java SE = 7
  * @author TeamworkGuy2
  * @since 2013-10-6
  */
@@ -18,18 +19,18 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 	ClassFile resolver;
 
 	/** The value of the reference_kind item must be in the range 1 to 9. The value denotes the
-	 * kind of this method handle, which characterizes its bytecode behavior (§5.4.3.5).
-	 * §5.4.3.5. Method Type and Method Handle Resolution:
-	 * Kind 	Description 	Interpretation
-	 * 1 	REF_getField 	getfield C.f:T
-	 * 2 	REF_getStatic 	getstatic C.f:T
-	 * 3 	REF_putField 	putfield C.f:T
-	 * 4 	REF_putStatic 	putstatic C.f:T
-	 * 5 	REF_invokeVirtual 	invokevirtual C.m:(A*)T
-	 * 6 	REF_invokeStatic 	invokestatic C.m:(A*)T
-	 * 7 	REF_invokeSpecial 	invokespecial C.m:(A*)T
-	 * 8 	REF_newInvokeSpecial 	new C; dup; invokespecial C.<init>:(A*)void
-	 * 9 	REF_invokeInterface 	invokeinterface C.m:(A*)T
+	 * kind of this method handle, which characterizes its bytecode behavior (§5.4.3.5).<br>
+	 * §5.4.3.5. Method Type and Method Handle Resolution:<br>
+	 * Kind 	Description 	Interpretation<br>
+	 * 1 	REF_getField 	getfield C.f:T<br>
+	 * 2 	REF_getStatic 	getstatic C.f:T<br>
+	 * 3 	REF_putField 	putfield C.f:T<br>
+	 * 4 	REF_putStatic 	putstatic C.f:T<br>
+	 * 5 	REF_invokeVirtual 	invokevirtual C.m:(A*)T<br>
+	 * 6 	REF_invokeStatic 	invokestatic C.m:(A*)T<br>
+	 * 7 	REF_invokeSpecial 	invokespecial C.m:(A*)T<br>
+	 * 8 	REF_newInvokeSpecial 	new C; dup; invokespecial C.{@code <init>}:(A*)void<br>
+	 * 9 	REF_invokeInterface 	invokeinterface C.m:(A*)T<br>
 	 */
 	byte reference_kind;
 	/** One of: CONSTANT_Fieldref.class, CONSTANT_Methodref.class, CONSTANT_InterfaceMethodref.class
@@ -38,19 +39,19 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 	/** The value of the reference_index item must be a valid index into the constant_pool table.
 	 * If the value of the reference_kind item is 1 (REF_getField), 2 (REF_getStatic), 3 (REF_putField),
 	 * or 4 (REF_putStatic), then the constant_pool entry at that index must be a CONSTANT_Fieldref_info (§4.4.2)
-	 * structure representing a field for which a method handle is to be created.
+	 * structure representing a field for which a method handle is to be created.<br>
 	 * If the value of the reference_kind item is 5 (REF_invokeVirtual), 6 (REF_invokeStatic), 7 (REF_invokeSpecial),
 	 * or 8 (REF_newInvokeSpecial), then the constant_pool entry at that index must be a CONSTANT_Methodref_info
 	 * structure (§4.4.2) representing a class's method or constructor (§2.9) for which a method handle is to be
-	 * created.
+	 * created.<br>
 	 * If the value of the reference_kind item is 9 (REF_invokeInterface), then the constant_pool entry at that
 	 * index must be a CONSTANT_InterfaceMethodref_info (§4.4.2) structure representing an interface's method for
-	 * which a method handle is to be created.
+	 * which a method handle is to be created.<br>
 	 * If the value of the reference_kind item is 5 (REF_invokeVirtual), 6 (REF_invokeStatic), 7 (REF_invokeSpecial),
 	 * or 9 (REF_invokeInterface), the name of the method represented by a CONSTANT_Methodref_info structure must
-	 * not be <init> or <clinit>.
+	 * not be {@code <init>} or {@code <clinit>}.<br>
 	 * If the value is 8 (REF_newInvokeSpecial), the name of the method represented by a CONSTANT_Methodref_info
-	 * structure must be <init>. 
+	 * structure must be {@code <init>}. 
 	 */
 	CpIndex<? extends CONSTANT_CP_Info> reference_index;
 
@@ -112,7 +113,13 @@ public class CONSTANT_MethodHandle implements CONSTANT_CP_Info {
 		}
 		reference_kind = in.readByte();
 		referenceClass = referenceKindType(reference_kind);
-		reference_index = resolver.getCheckCpIndex(in.readShort(), referenceClass);
+		reference_index = resolver.getExpectCpIndex(in.readShort(), referenceClass);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return toString();
 	}
 
 

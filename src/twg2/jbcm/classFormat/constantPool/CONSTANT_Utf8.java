@@ -7,7 +7,8 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Settings;
 
-/** Java class file format constant pool <code>UTF-8 string</code> info type
+/** Java class file format constant pool <code>UTF-8 string</code> info type.<br>
+ * Constant value = 1, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -15,7 +16,18 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 	public static final byte TAG = 1;
 	ClassFile resolver;
 
+	/** The value of the length item gives the number of bytes in the bytes array (not the length of the resulting string).
+	 * The strings in the CONSTANT_Utf8_info structure are not null-terminated.
+	 */
 	short length; // in bytes
+	/** The bytes array contains the bytes of the string. No byte may have the value (byte)0. No byte may lie in the
+	 * range {@code (byte)0xf0} to {@code (byte)0xff}.<br>
+	 * 1 byte characters: 0xxxxxxx ('\u0001' to '\u007F')<br>
+	 * 2 byte characters: (x)110xxxxx (y)10xxxxxx ('\u0000' and '\u0080' to '\u07FF') ((x&0x1f)<<6)+(y&03f)<br>
+	 * 3 byte characters: (x)1110xxxx (y)10xxxxxx (z)10xxxxxx ((x & 0xf) << 12) + ((y & 0x3f) << 6) + (z & 0x3f)<br>
+	 * stored in big-endian order in class file
+	 */
+	byte[] bytes;
 	/** BaseType Character 	Type 	Interpretation
 	 * B 	byte 	signed byte
 	 * C 	char 	Unicode character
@@ -28,7 +40,6 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 	 * Z 	boolean 	true or false
 	 * [ 	reference 	one array dimension 
 	 */
-	byte[] bytes;
 	String str;
 
 
@@ -42,6 +53,9 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 	}
 
 
+	/**
+	 * @return this utf-8 string literal
+	 */
 	public String getString() {
 		return str;
 	}
@@ -137,6 +151,15 @@ public class CONSTANT_Utf8 implements CONSTANT_CP_Info {
 			}
 		}
 		str = strBuilder.toString();
+	}
+
+
+	/**
+	 * @return the string literal
+	 */
+	@Override
+	public String toShortString() {
+		return str;
 	}
 
 

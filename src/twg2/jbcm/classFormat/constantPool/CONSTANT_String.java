@@ -9,7 +9,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>String</code> info type
+/** Java class file format constant pool <code>String</code> info type.<br>
+ * Constant value = 8, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -64,7 +65,13 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_String tag: " + tagV); }
 		}
-		string_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		string_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return string_index.getCpObject().toShortString();
 	}
 
 

@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.ClassFileAttributes;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
@@ -38,7 +39,7 @@ public class RuntimeInvisibleTypeAnnotations implements Attribute_Type {
 
 	public RuntimeInvisibleTypeAnnotations(ClassFile resolver, short attributeNameIndex) {
 		this.resolver = resolver;
-		this.attribute_name_index = Settings.initAttributeNameIndex(attributeNameIndex, resolver);
+		this.attribute_name_index = resolver.getAttributeNameIndex(attributeNameIndex);
 	}
 
 
@@ -74,8 +75,8 @@ public class RuntimeInvisibleTypeAnnotations implements Attribute_Type {
 
 	@Override
 	public void readData(DataInput in) throws IOException {
-		if(Settings.doReadAttributeName()) {
-			attribute_name_index = Settings.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
+		if(Settings.readAttributeName) {
+			attribute_name_index = ClassFileAttributes.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
 		}
 		attribute_length = in.readInt();
 		num_annotations = in.readShort();

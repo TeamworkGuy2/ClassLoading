@@ -1,7 +1,7 @@
 {
-	"version" : "0.3.0",
+	"version" : "0.4.0",
 	"name" : "class-loading",
-	"description" : "Java class file parsing and manipulation",
+	"description" : "Java class file parsing, manipulation, and to human readable representation",
 	"homepage" : "https://github.com/TeamworkGuy2/ClassLoading",
 	"license" : "MIT",
 	"main" : "./bin/class_loading.jar",

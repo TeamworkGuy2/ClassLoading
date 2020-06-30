@@ -7,7 +7,8 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Settings;
 
-/** Java class file format constant pool <code>Long</code> info type
+/** Java class file format constant pool <code>Long</code> info type.<br>
+ * Constant value = 5, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -15,8 +16,9 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 	public static final byte TAG = 5;
 	ClassFile resolver;
 
-	/** The unsigned high_bytes and low_bytes items of the CONSTANT_Long_info structure together represent the value of the long constant.
-	 * Where the bytes of each of high_bytes and low_bytes are stored in big-endian (high byte first) order.
+	/** The unsigned high_bytes and low_bytes items of the CONSTANT_Long_info structure together represent the value of
+	 * the long constant ((long) high_bytes << 32) + low_bytes, where the bytes of each of high_bytes and low_bytes
+	 * are stored in big-endian (high byte first) order.
 	 */
 	int high_bytes;
 	int low_bytes;
@@ -54,6 +56,12 @@ public class CONSTANT_Long implements CONSTANT_CP_Info {
 		}
 		high_bytes = in.readInt();
 		low_bytes = in.readInt();
+	}
+
+
+	@Override
+	public String toShortString() {
+		return Long.toString((long)high_bytes << 32 + low_bytes);
 	}
 
 

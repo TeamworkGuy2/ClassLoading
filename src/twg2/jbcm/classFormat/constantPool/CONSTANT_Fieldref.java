@@ -8,8 +8,10 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.TypeUtility;
 
-/** Java class file format constant pool <code>Field reference</code> info type
+/** Java class file format constant pool <code>Field reference</code> info type.<br>
+ * Constant value = 9, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -25,8 +27,8 @@ public class CONSTANT_Fieldref implements CONSTANT_CP_Info {
 	CpIndex<CONSTANT_Class> class_index;
 	/** The value of the name_and_type_index item must be a valid index into the constant_pool table. The constant_pool
 	 * entry at that index must be a CONSTANT_NameAndType_info (§4.4.6) structure. This constant_pool entry indicates
-	 * the name and descriptor of the field or method. In a CONSTANT_Fieldref_info the indicated descriptor must be
-	 * a field descriptor (§4.3.2). Otherwise, the indicated descriptor must be a method descriptor (§4.3.3).
+	 * the name and descriptor of the field or method. In a CONSTANT_Fieldref_info the indicated descriptor must be a
+	 * field descriptor (§4.3.2). Otherwise, the indicated descriptor must be a method descriptor (§4.3.3).
 	 */
 	CpIndex<CONSTANT_NameAndType> name_and_type_index;
 
@@ -83,14 +85,25 @@ public class CONSTANT_Fieldref implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
 		}
-		class_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
-		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+		class_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Class.class);
+		name_and_type_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		CONSTANT_Class clazz = class_index.getCpObject();
+		CONSTANT_NameAndType field = name_and_type_index.getCpObject();
+
+		StringBuilder dst = new StringBuilder();
+		dst.append(clazz.getName().getString()).append(".").append(field.getName().getString()).append(" : ");
+		TypeUtility.typeDescriptorToSource(field.getDescriptor().getString(), dst);
+		return dst.toString();
 	}
 
 
 	@Override
 	public String toString() {
-		//return "CONSTANT_Fieldref(9, class=" + resolver.getConstantPool(class_index) + ", name_and_type=" + resolver.getConstantPool(name_and_type_index) + ")";
 		CONSTANT_Class clazz = class_index.getCpObject();
 		CONSTANT_NameAndType field = name_and_type_index.getCpObject();
 		return "Fieldref(9, class=" + clazz.getName() + ", name=" + field.getName() + ", type=" + field.getDescriptor() + ")";

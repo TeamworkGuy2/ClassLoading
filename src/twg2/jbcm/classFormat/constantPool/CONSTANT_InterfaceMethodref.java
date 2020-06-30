@@ -8,8 +8,10 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.TypeUtility;
 
-/** Java class file format constant pool <code>Interface method reference</code> info type
+/** Java class file format constant pool <code>Interface method reference</code> info type.<br>
+ * Constant value = 11, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -84,14 +86,26 @@ public class CONSTANT_InterfaceMethodref implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_InterfaceMethodref tag: " + tagV); }
 		}
-		class_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
-		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+		class_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Class.class);
+		name_and_type_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		CONSTANT_Class clazz = class_index.getCpObject();
+		StringBuilder dst = new StringBuilder();
+		dst.append(clazz.getName().getString()).append('.');
+		TypeUtility.methodDescriptor(name_and_type_index.getCpObject(), dst);
+		return dst.toString();
 	}
 
 
 	@Override
 	public String toString() {
-		return "InterfaceMethodref(11, class=" + class_index.getCpObject() + ", name_and_type=" + name_and_type_index.getCpObject() + ")";
+		CONSTANT_Class clazz = class_index.getCpObject();
+		CONSTANT_NameAndType method = name_and_type_index.getCpObject();
+		return "InterfaceMethodref(11, class=" + clazz.getName() + ", name=" + method.getName() + ", type=" + method.getDescriptor() + ")";
 	}
 
 }

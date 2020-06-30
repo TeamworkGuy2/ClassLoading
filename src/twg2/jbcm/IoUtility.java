@@ -39,7 +39,7 @@ public final class IoUtility {
 	 * @param b the byte array to write the long to
 	 * @param offset the offset into the array at which to start writing bytes
 	 */
-	public static final void writeLong(long value, byte[] b, int offset) {
+	public static void writeLong(long value, byte[] b, int offset) {
 		b[offset] = (byte)(value >>> 56);
 		b[offset+1] = (byte)(value >>> 48);
 		b[offset+2] = (byte)(value >>> 40);
@@ -56,7 +56,7 @@ public final class IoUtility {
 	 * @param b the byte array to write the integer to
 	 * @param offset the offset into the array at which to start writing bytes
 	 */
-	public static final void writeInt(int value, byte[] b, int offset) {
+	public static void writeInt(int value, byte[] b, int offset) {
 		b[offset] = (byte)((value >>> 24) & 0xFF);
 		b[offset+1] = (byte)((value >>> 16) & 0xFF);
 		b[offset+2] = (byte)((value >>> 8) & 0xFF);
@@ -69,7 +69,7 @@ public final class IoUtility {
 	 * @param b the byte array to write the short to
 	 * @param offset the offset into the array at which to start writing bytes
 	 */
-	public static final void writeShort(short value, byte[] b, int offset) {
+	public static void writeShort(short value, byte[] b, int offset) {
 		b[offset] = (byte)((value >>> 8) & 0xFF);
 		b[offset+1] = (byte)(value & 0xFF);
 	}
@@ -81,7 +81,7 @@ public final class IoUtility {
 	 * @return eight bytes read from the indices {@code [offset, offset+3]} and converted to
 	 * a long by {@code (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3]}
 	 */
-	public static final long readLong(byte[] b, int offset) {
+	public static long readLong(byte[] b, int offset) {
 		return ((long)b[offset] << 56) |
 				((long)(b[offset+1] & 0xFF) << 48) |
 				((long)(b[offset+2] & 0xFF) << 40) |
@@ -99,7 +99,7 @@ public final class IoUtility {
 	 * @return four bytes read from the indices {@code [offset, offset+3]} and converted to
 	 * an integer by {@code (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3]}
 	 */
-	public static final int readInt(byte[] b, int offset) {
+	public static int readInt(byte[] b, int offset) {
 		return (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3];
 	}
 
@@ -110,101 +110,77 @@ public final class IoUtility {
 	 * @return two bytes read from indices {@code offset} and {@code offset+1} and converted to
 	 * a short by {@code (b[offset] << 8) | b[offset+1]}
 	 */
-	public static final short readShort(byte[] b, int offset) {
+	public static short readShort(byte[] b, int offset) {
 		return (short)((b[offset] << 8) | b[offset+1]);
 	}
 
 
-	/** Shift the offset values associated with a specific opcode at a specific location in a chunk of code.
+	/** Shift the offset values associated with a specific instruction in a chunk of code.
 	 * For example, shifting a goto offsets at position 55 by 12 might look like:<br/>
 	 * {@code shiftOffset(0xA7, 12, 1, 2, code, 55);}<br/>
 	 * Or shifting a goto_w offsets at position 25 by 160:<br/>
 	 * {@code shiftOffset(0xC8, 160, 1, 4, code, 25);}
-	 * @param opcode the opcode to look for in the code
-	 * @param offset the offset to add to offset values
+	 * @param offset the instruction code offset to adjust
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	public static final int shift1Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
-		byte op = code[codeOffset];
-		if(op == opcode) {
-			codeOffset+=offsetOffset;
-			byte curOffset = code[codeOffset];
-			if(curOffset + offset < curOffset) {
-				throw new ArithmeticException("byte overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
-			}
-			curOffset += offset;
-			code[codeOffset] = curOffset;
-			codeOffset+=1;
-			return codeOffset;
+	public static int shift1Offset(int offset, final int offsetOffset, byte[] code, int codeOffset) {
+		codeOffset += offsetOffset;
+		byte curOffset = code[codeOffset];
+		if(curOffset + offset < curOffset) {
+			throw new ArithmeticException("byte overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
 		}
-		else {
-			throw new IllegalStateException("Expected opcode " + opcode + " at location " + codeOffset + ", found opcode " + code[codeOffset] + " instead");
-		}
+		curOffset += offset;
+		code[codeOffset] = curOffset;
+		return codeOffset + 1;
 	}
 
 
-	/** Shift the offset values associated with a specific opcode at a specific location in a chunk of code.
+	/** Shift the offset values associated with a specific instruction in a chunk of code.
 	 * For example, shifting a goto offsets at position 55 by 12 might look like:<br/>
-	 * {@code shiftOffset(0xA7, 12, 1, 2, code, 55);}<br/>
+	 * {@code shiftOffset(12, 1, 2, code, 55);}<br/>
 	 * Or shifting a goto_w offsets at position 25 by 160:<br/>
-	 * {@code shiftOffset(0xC8, 160, 1, 4, code, 25);}
-	 * @param opcode the opcode to look for in the code
-	 * @param offset the offset to add to offset values
+	 * {@code shiftOffset(160, 1, 4, code, 25);}
+	 * @param offset the instruction code offset to adjust
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	public static final int shift2Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
-		byte op = code[codeOffset];
-		if(op == opcode) {
-			codeOffset+=offsetOffset;
-			short curOffset = IoUtility.readShort(code, codeOffset);
-			if(curOffset + offset < curOffset) {
-				throw new ArithmeticException("short overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
-			}
-			curOffset += offset;
-			IoUtility.writeShort(curOffset, code, codeOffset);
-			codeOffset+=2;
-			return codeOffset;
+	public static int shift2Offset(int offset, int offsetOffset, byte[] code, int codeOffset) {
+		codeOffset += offsetOffset;
+		short curOffset = IoUtility.readShort(code, codeOffset);
+		if(curOffset + offset < curOffset) {
+			throw new ArithmeticException("short overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
 		}
-		else {
-			throw new IllegalStateException("Expected opcode " + opcode + " at location " + codeOffset + ", found opcode " + code[codeOffset] + " instead");
-		}
+		curOffset += offset;
+		IoUtility.writeShort(curOffset, code, codeOffset);
+		return codeOffset + 2;
 	}
 
 
-	/** Shift the offset values associated with a specific opcode at a specific location in a chunk of code.
+	/** Shift the offset values associated with a specific instruction in a chunk of code.
 	 * For example, shifting a goto offsets at position 55 by 12 might look like:<br/>
-	 * {@code shiftOffset(0xA7, 12, 1, 2, code, 55);}<br/>
+	 * {@code shiftOffset(12, 1, 2, code, 55);}<br/>
 	 * Or shifting a goto_w offsets at position 25 by 160:<br/>
-	 * {@code shiftOffset(0xC8, 160, 1, 4, code, 25);}
-	 * @param opcode the opcode to look for in the code
-	 * @param offset the offset to add to offset values
+	 * {@code shiftOffset(160, 1, 4, code, 25);}
+	 * @param offset the instruction code offset to adjust
 	 * @param offsetOffset the number of bytes ahead of the opcode at which the offset to adjust starts (1 for an offset that immediately follows an opcode)
 	 * @param code the array of code to search through for the opcode
 	 * @param codeOffset the offset into the code array at which to update the opcode's offset value
 	 * @return the location after the opcode's offset value, calculated as {@code codeOffset + offsetOffset + offsetLen}
 	 */
-	public static final int shift4Offset(final int opcode, final int offset, final int offsetOffset, byte[] code, int codeOffset) {
-		byte op = code[codeOffset];
-		if(op == opcode) {
-			codeOffset+=offsetOffset;
-			int curOffset = IoUtility.readInt(code, codeOffset);
-			if(curOffset + offset < curOffset) {
-				throw new ArithmeticException("integer overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
-			}
-			curOffset += offset;
-			IoUtility.writeInt(curOffset, code, codeOffset);
-			codeOffset+=4;
-			return codeOffset;
+	public static int shift4Offset(int offset, int offsetOffset, byte[] code, int codeOffset) {
+		codeOffset += offsetOffset;
+		int curOffset = IoUtility.readInt(code, codeOffset);
+		if(curOffset + offset < curOffset) {
+			throw new ArithmeticException("integer overflow: " + curOffset + "+" + offset + "=" + (curOffset+offset));
 		}
-		else {
-			throw new IllegalStateException("Expected opcode " + opcode + " at location " + codeOffset + ", found opcode " + code[codeOffset] + " instead");
-		}
+		curOffset += offset;
+		IoUtility.writeInt(curOffset, code, codeOffset);
+		return codeOffset + 4;
 	}
 
 
@@ -214,21 +190,21 @@ public final class IoUtility {
 	 * @param length the number of bytes of the code array to check through
 	 * @param cbFunc the function to call for each instruction found in specified code array range
 	 */
-	public static final void forEach(byte[] code, int offset, int length, ByteCodeConsumer cbFunc) {
+	public static void forEach(byte[] code, int offset, int length, ByteCodeConsumer cbFunc) {
 		int numOperands = 0;
 		@SuppressWarnings("unused")
 		int operand = 0;
 
 		for(int i = offset, size = offset + length; i < size; i++) {
-			numOperands = Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount();
+			numOperands = Opcodes.get((code[i] & 0xFF)).getOperandCount();
 			// Read following bytes of code and convert them to an operand depending on the number of operands specified for the current command
 			operand = loadOperands(numOperands, code, i);
 			// Special handling for instructions with unpredictable byte code lengths
 			if(numOperands == Opcodes.Const.UNPREDICTABLE) {
 				if(Opcodes.WIDE.is(code[i])) {
-					cbFunc.accept(Opcodes.getOpcode((int)(code[i] & 0xFF)), code, i);
+					cbFunc.accept(Opcodes.get((code[i] & 0xFF)), code, i);
 					i++; // because wide operations are nested around other operations 
-					numOperands = Opcodes.getOpcode((int)(code[i] & 0xFF)).getOperandCount();
+					numOperands = Opcodes.get((code[i] & 0xFF)).getOperandCount();
 				}
 				else if(Opcodes.TABLESWITCH.is(code[i])) {
 					throw new IllegalStateException("tableswitch code handling not implemented");
@@ -237,13 +213,13 @@ public final class IoUtility {
 					throw new IllegalStateException("lookupswitch code handling not implemented");
 				}
 			}
-			cbFunc.accept(Opcodes.getOpcode((int)(code[i] & 0xFF)), code, i);
+			cbFunc.accept(Opcodes.get((code[i] & 0xFF)), code, i);
 			i+= (numOperands < 0) ? 0 : numOperands;
 		}
 	}
 
 
-	private static final int loadOperands(int numOperands, byte[] code, int index) {
+	private static int loadOperands(int numOperands, byte[] code, int index) {
 		return (numOperands > 3 ? (((code[index+1] & 0xFF) << 24) | ((code[index+2] & 0xFF) << 16) | ((code[index+3] & 0xFF) << 8) | (code[index+4] & 0xFF)) :
 			(numOperands > 2 ? (((code[index+1] & 0xFF) << 16) | ((code[index+2] & 0xFF) << 8) | (code[index+3] & 0xFF)) :
 				(numOperands > 1 ? (((code[index+1] & 0xFF) << 8) | (code[index+2] & 0xFF)) :
@@ -300,13 +276,13 @@ public final class IoUtility {
 	*/
 
 
-	public static CpIndexChanger cpIndex(int opcode, int offset, int len) {
-		return new ChangeCpIndex(opcode, offset, len);
+	public static CpIndexChanger cpIndex(int offset, int len) {
+		return new ChangeCpIndex(offset, len);
 	}
 
 
-	public static CodeOffsetChanger offsetModifier(int opcode, int offset, int len) {
-		return new ChangeCpIndex(opcode, offset, len);
+	public static CodeOffsetChanger offsetModifier(int offset, int len) {
+		return new ChangeCpIndex(offset, len);
 	}
 
 
@@ -387,12 +363,12 @@ public final class IoUtility {
 	};
 
 
-	public static final byte[] loadBytes(File file) throws IOException {
+	public static byte[] loadBytes(File file) throws IOException {
 		return loadBytes(file.toURI().toURL());
 	}
 
 
-	public static final byte[] loadBytes(URL url) throws IOException {
+	public static byte[] loadBytes(URL url) throws IOException {
 		byte[] buf = new byte[8192];
 		InputStream is = null;
 		// Open the URL and load its contents into a byte buffer

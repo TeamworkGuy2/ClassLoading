@@ -8,8 +8,10 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.TypeUtility;
 
-/** Java class file format constant pool <code>Method reference</code> info type
+/** Java class file format constant pool <code>Method reference</code> info type.<br>
+ * Constant value = 10, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -29,7 +31,7 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 	 * In a CONSTANT_Fieldref_info the indicated descriptor must be a field descriptor (§4.3.2).
 	 * Otherwise, the indicated descriptor must be a method descriptor (§4.3.3).
 	 * If the name of the method of a CONSTANT_Methodref_info structure begins with a' <' ('\u003c'),
-	 * then the name must be the special name <init>, representing an instance initialization method (§3.9).
+	 * then the name must be the special name {@code <init>}, representing an instance initialization method (§3.9).
 	 * Such a method must return no value. 
 	 */
 	CpIndex<CONSTANT_NameAndType> name_and_type_index;
@@ -87,8 +89,18 @@ public class CONSTANT_Methodref implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Methodref tag: " + tagV); }
 		}
-		class_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
-		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+		class_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Class.class);
+		name_and_type_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		CONSTANT_Class clazz = class_index.getCpObject();
+		StringBuilder dst = new StringBuilder();
+		dst.append(clazz.getName().getString()).append('.');
+		TypeUtility.methodDescriptor(name_and_type_index.getCpObject(), dst);
+		return dst.toString();
 	}
 
 

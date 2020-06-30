@@ -4,7 +4,21 @@ This project does its best to adhere to [Semantic Versioning](http://semver.org/
 
 
 --------
-### [0.3.0](N/A) - 2017-12-22
+### [0.4.0](N/A) - 2020-06-29
+#### Added
+* `ClassFileToSource` and `CodeToSource` work-in-progress to convert class file back into Java source code
+* `CONSTANT_CP_Info.toShortString()` added interface method and to implementations
+
+#### Changed
+* Clean up `Settings` mega-utility class. Move methods into `ConstantPoolExtensions`, `ClassFile`, and `ClassFileAttributes`
+* Cleaned up `Opcodes`
+
+#### Removed
+* Unused `ConstantPoolIndexArray` and `ConstantPoolTag` annotations
+
+
+--------
+### [0.3.0](https://github.com/TeamworkGuy2/ClassLoading/commit/a9d89312f7c97837b332ecda61f6ef38de53f70f) - 2017-12-22
 #### Changed
 * Upgrade to Java 9
 * Java 9 ClassFile format support:

@@ -7,8 +7,11 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
-import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Double;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Float;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Integer;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Long;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
 import twg2.jbcm.modify.IndexUtility;
 
@@ -119,7 +122,7 @@ public class Element_Value implements ReadWritable {
 
 
 	public final void setConstValueIndex(CpIndex<CONSTANT_CP_Info> constValueIndex) {
-		Settings.checkElement_Value(constValueIndex);
+		checkElementValue(constValueIndex);
 		this.const_value_index = constValueIndex;
 	}
 
@@ -220,7 +223,7 @@ public class Element_Value implements ReadWritable {
 		// TODO clean up
 		if(tag == 'B' || tag == 'C' || tag == 'D' || tag == 'F' || tag == 'I' || tag == 'J' || tag == 'S' ||
 				tag == 'Z' || tag == 's') {
-			const_value_index = Settings.getElement_ValuePrimitiveOrString(in, tag, resolver);
+			const_value_index = getElementValuePrimitiveOrString(in, tag, resolver);
 		}
 		else if(tag == 'e') {
 			type_name_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
@@ -287,6 +290,79 @@ public class Element_Value implements ReadWritable {
 		}
 
 		return sb.toString();
+	}
+
+
+	/** Read an {@link Element_Value}'s {@code const_value_index} constant pool index.
+	 * Handle's tag types of B, C, D, F, I, J, S, Z, s.
+	 * Does not handle e, c, @, [.
+	 * @param in the data input stream to read the constant pool index from
+	 * @param tag the tag constant pool type tag
+	 * @param resolver the constant pool to use
+	 * @return the constant pool object of the specified tag type at the index read from the input stream
+	 * @throws IOException if there is an error reading from the input stream
+	 * @throws IllegalArgumentException if the tag type is not one of B, C, D, F, I, J, S, Z, s.
+	 */
+	public static final CpIndex<CONSTANT_CP_Info> getElementValuePrimitiveOrString(DataInput in, byte tag, ClassFile resolver) throws IOException {
+		switch(tag) {
+		case 'B':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objB = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Integer.class);
+			return objB;
+		case 'C':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objC = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Integer.class);
+			return objC;
+		case 'D':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objD = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Double.class);
+			return objD;
+		case 'F':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objF = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Float.class);
+			return objF;
+		case 'I':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objI = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Integer.class);
+			return objI;
+		case 'J':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objJ = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Long.class);
+			return objJ;
+		case 'S':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objS = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Integer.class);
+			return objS;
+		case 'Z':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objZ = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Integer.class);
+			return objZ;
+		case 's':
+			@SuppressWarnings("unchecked")
+			CpIndex<CONSTANT_CP_Info> objs = (CpIndex<CONSTANT_CP_Info>)(CpIndex<? extends CONSTANT_CP_Info>)
+					resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+			return objs;
+		default:
+			throw new IllegalArgumentException("unknown element_value of " + tag + ", valid values are: B, C, D, F, I, J, S, Z, s, e, c, @, [");
+		}
+	}
+
+
+	public static final CpIndex<CONSTANT_CP_Info> checkElementValue(CpIndex<CONSTANT_CP_Info> element) {
+		CONSTANT_CP_Info obj = element.getCpObject();
+		if(obj instanceof CONSTANT_Integer || obj instanceof CONSTANT_Long || obj instanceof CONSTANT_Float
+				|| obj instanceof CONSTANT_Double || obj instanceof CONSTANT_Utf8) {
+			return element;
+		}
+		throw new IllegalArgumentException("element value constant index is not a valid type: " + obj.getClass());
 	}
 
 }

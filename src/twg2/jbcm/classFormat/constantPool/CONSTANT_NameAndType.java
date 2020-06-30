@@ -8,8 +8,10 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.TypeUtility;
 
-/** Java class file format constant pool <code>NameAndType</code> info type
+/** Java class file format constant pool <code>NameAndType</code> info type.<br>
+ * Constant value = 12, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -20,7 +22,7 @@ public class CONSTANT_NameAndType implements CONSTANT_CP_Info {
 	/** The value of the name_index item must be a valid index into the constant_pool table. The constant_pool entry
 	 * at that index must be a CONSTANT_Utf8_info (§4.4.7) structure representing either a valid field or
 	 * method name (§2.7) stored as a simple name (§2.7.1), that is, as a Java programming language
-	 * identifier (§2.2) or as the special method name <init> (§3.9).
+	 * identifier (§2.2) or as the special method name {@code <init>} (§3.9).
 	 */	
 	CpIndex<CONSTANT_Utf8> name_index;
 	/** The value of the descriptor_index item must be a valid index into the constant_pool table. The constant_pool
@@ -82,8 +84,17 @@ public class CONSTANT_NameAndType implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_NameAndType tag: " + tagV); }
 		}
-		name_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
-		descriptor_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		name_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		descriptor_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		StringBuilder dst = new StringBuilder();
+		dst.append(name_index.getCpObject().toShortString()).append(" : ");
+		TypeUtility.typeDescriptorToSource(descriptor_index.getCpObject().getString(), dst);
+		return dst.toString();
 	}
 
 

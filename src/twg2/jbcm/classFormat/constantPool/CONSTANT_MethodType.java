@@ -9,7 +9,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>MethodType reference</code> info type
+/** Java class file format constant pool <code>MethodType reference</code> info type.<br>
+ * Constant value = 16, class version = 51.0, Java SE = 7
  * @author TeamworkGuy2
  * @since 2013-10-6
  */
@@ -64,7 +65,13 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
 		}
-		descriptor_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		descriptor_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return toString();
 	}
 
 

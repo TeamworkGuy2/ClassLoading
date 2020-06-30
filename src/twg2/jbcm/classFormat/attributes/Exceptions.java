@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.ClassFileAttributes;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
@@ -34,7 +35,7 @@ public class Exceptions implements Attribute_Type {
 
 
 	public Exceptions(ClassFile resolver, short attributeNameIndex) {
-		this.attribute_name_index = Settings.initAttributeNameIndex(attributeNameIndex, resolver);
+		this.attribute_name_index = resolver.getAttributeNameIndex(attributeNameIndex);
 		this.resolver = resolver;
 	}
 
@@ -72,8 +73,8 @@ public class Exceptions implements Attribute_Type {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readData(DataInput in) throws IOException {
-		if(Settings.doReadAttributeName()) {
-			attribute_name_index = Settings.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
+		if(Settings.readAttributeName) {
+			attribute_name_index = ClassFileAttributes.readAttributeNameIndex(in, resolver, ATTRIBUTE_NAME);
 		}
 		attribute_length = in.readInt();
 		number_of_exceptions = in.readShort();

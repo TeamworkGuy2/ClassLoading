@@ -9,54 +9,34 @@ import java.nio.charset.Charset;
 
 import org.eclipse.jdt.core.compiler.CompilationProgress;
 
-import twg2.jbcm.main.RuntimeReloadMain;
-
 /** Compile a Java source file
  * @author TeamworkGuy2
  * @since 2013-10-7
  */
 public class CompileSource {
 
-	public CompileSource() {
+	private CompileSource() {
 	}
 
 
 	// http://help.eclipse.org/indigo/index.jsp?topic=%2Forg.eclipse.jdt.doc.user%2Ftasks%2Ftask-using_batch_compiler.htm
-	public Class<?>[] compile(URL path, URL sourceClassPath, URL destinationClassPath, URL[] sources) throws ClassNotFoundException {
+	public static void compile(URL path, URL sourceClassPath, URL destinationClassPath, URL[] sources) throws ClassNotFoundException {
 
-		String pathString = new File(path.getPath()).getPath();
-		String sourcePathString = new File(sourceClassPath.getPath()).getPath();
-		String destinationPathString = new File(destinationClassPath.getPath()).getPath();
-		String[] clArgs = new String[] {
-			"-1.5",
-			//"-classpath",
-			//"rt.jar",
-			//pathString,
-			"-sourcepath",
-			sourcePathString,
-			"-d",
-			destinationPathString,
-			sourcePathString+"\\compile\\Hello.java",
-		};
-		String clArg = "-1.6 -classpath rt.jar;" + pathString + " -sourcepath " + sourcePathString +
-				" -d " + destinationPathString + " " + sourcePathString+"\\compile\\Hello.java";
-		System.out.print("Compiler parameters: ");
-		for(String arg : clArgs) {
-			System.out.print(arg + ", ");
-		}
-		System.out.println();
-		System.out.println("Compiler param: " + clArg);
+		String srcPath = new File(path.getPath()).getPath();
+		String sourceFilePath = new File(sourceClassPath.getPath()).getPath();
+		String dstPathString = new File(destinationClassPath.getPath()).getPath();
+		String clArg = "-1.6 -classpath rt.jar;" + srcPath +
+				" -sourcepath " + sourceFilePath +
+				" -d " + dstPathString + " " + sourceFilePath + "\\compile\\Hello.java";
+
+		System.out.println("Compiler args: " + clArg);
+
 		Charset charset = Charset.forName("UTF-8");
 		CompilationProgress compileProgress = new CompilationProgressImpl();
 		ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
 		PrintWriter outWriter = new PrintWriter(new OutputStreamWriter(out, charset));
 		PrintWriter errWriter = new PrintWriter(System.err);
 		org.eclipse.jdt.core.compiler.batch.BatchCompiler.compile(clArg, outWriter, errWriter, compileProgress);
-
-		Class<?>[] classes = new Class<?>[sources.length];
-		RuntimeReloadMain reload = new RuntimeReloadMain();
-		reload.loadRun("res/compile/class_files", "compile.Hello", "run", (String[])null);
-		return classes;
 	}
 
 

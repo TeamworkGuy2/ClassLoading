@@ -11,7 +11,8 @@ import twg2.jbcm.classFormat.attributes.BootstrapMethods;
 import twg2.jbcm.classFormat.attributes.BootstrapMethods.BootstrapMethod;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>InvokeDynamic reference</code> info type
+/** Java class file format constant pool <code>InvokeDynamic reference</code> info type.<br>
+ * Constant value = 18, class version = 51.0, Java SE = 7
  * @author TeamworkGuy2
  * @since 2013-10-6
  */
@@ -24,7 +25,7 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 	 */
 	short bootstrap_method_attr_index;
 	/** The value of the name_and_type_index item must be a valid index into the constant_pool table.
-	 * The constant_pool entry at that index must be a CONSTANT_NameAndType_info (§4.4.6) structure
+	 * The constant_pool entry at that index must be a CONSTANT_NameAndType_info structure (§4.4.6)
 	 * representing a method name and method descriptor (§4.3.3). 
 	 */
 	CpIndex<CONSTANT_NameAndType> name_and_type_index;
@@ -82,13 +83,18 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
 		}
 		bootstrap_method_attr_index = in.readShort();
-		name_and_type_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+		name_and_type_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_NameAndType.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return toString();
 	}
 
 
 	@Override
 	public String toString() {
-		//return "CONSTANT_Fieldref(9, class=" + resolver.getConstantPool(class_index) + ", name_and_type=" + resolver.getConstantPool(name_and_type_index) + ")";
 		BootstrapMethods bootstrapMethod = ((BootstrapMethods)resolver.getBootstrapMethods());
 		CONSTANT_NameAndType method = name_and_type_index.getCpObject();
 		return "InvokeDynamic(18, invoke_dynamic=" + bootstrapMethod.getBootstrapMethod(bootstrap_method_attr_index) +

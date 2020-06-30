@@ -9,7 +9,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.modify.IndexUtility;
 
-/** Java class file format constant pool <code>Class</code> info type
+/** Java class file format constant pool <code>Class</code> info type.<br>
+ * Constant value = 7, class version = 45.3, Java SE = 1.0.2
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
@@ -19,7 +20,7 @@ public class CONSTANT_Class implements CONSTANT_CP_Info {
 
 	/** The value of the name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
-	 * representing a valid fully qualified class or interface name (§2.8.1) encoded in internal form (§4.2). 
+	 * representing a valid fully qualified class or interface name (§2.8.1) encoded in internal form (§4.2).
 	 */
 	CpIndex<CONSTANT_Utf8> name_index;
 
@@ -64,7 +65,13 @@ public class CONSTANT_Class implements CONSTANT_CP_Info {
 			int tagV = in.readByte();
 			if(tagV != TAG) { throw new IllegalStateException("illegal CONSTANT_Class tag: " + tagV); }
 		}
-		name_index = resolver.getCheckCpIndex(in.readShort(), CONSTANT_Utf8.class);
+		name_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
+	}
+
+
+	@Override
+	public String toShortString() {
+		return name_index.getCpObject().toShortString();
 	}
 
 

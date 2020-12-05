@@ -563,10 +563,20 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * @throws IOException if the file cannot be opened or if it is not a recognized class file format
 	 */
 	public static final ClassFile load(File file) throws IOException {
+		return load(new BufferedInputStream(new FileInputStream(file)));
+	}
+
+
+	/** Create a {@link ClassFile} from the specified input stream
+	 * @param input the input stream to load
+	 * @return the class file loaded from the specified input stream
+	 * @throws IOException if the file cannot be opened or if it is not a recognized class file format
+	 */
+	public static final ClassFile load(InputStream input) throws IOException {
 		ClassFile classFile = new ClassFile();
 		DataInputStream in = null;
 		try {
-			in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+			in = new DataInputStream(input);
 			classFile.readData(in);
 		} finally {
 			if(in != null) {

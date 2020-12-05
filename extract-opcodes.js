@@ -48,11 +48,14 @@ res.map((rr, idx, ary) => {
     var isCondition = rr.name.startsWith("if");
     var isJump = rr.operation.startsWith("Branch ") || rr.name === "jsr" || rr.name === "jsr_w";
     var isCpIndex = rr.description.indexOf("index into the run-time constant pool of the current class") > -1;
+    var isCompareNumeric = rr.operation.startsWith("Compare ");
+    var isMathOp = ["Add ", "Subtract ", "Multiply ", "Divide ", "Remainder ", "Negate ", "Shift ", "Arithmetic shift ", "Logical shift ", "Boolean AND ", "Boolean OR ", "Boolean XOR "].some((str) => rr.operation.startsWith(str));
     var isStackManipulate = rr.name.startsWith("dup") || rr.name === "swap";
+    var isTypeConvert = rr.operation.startsWith("Convert ");
     var isVariableStackPop = rr.operandStack[opStackOffset].indexOf("[arg") > -1;
     var types;
     var opUtils;
-    return "\t/* " + String(rr.opCode).padStart(2, ' ') + " " + ("0x" + rr.opCode.toString(16).toUpperCase()).padStart(4, ' ') + " */" +
+    return "\t/* " + ("0x" + rr.opCode.toString(16).toUpperCase()).padStart(4, ' ') + " */" +
         rr.name.toUpperCase().padEnd(16, ' ') +
         "(" + rr.opCode + ", " + operandCount + ", " +
         ((types = [
@@ -60,6 +63,7 @@ res.map((rr, idx, ary) => {
             (isVariableStackPop ? "Type.POP_UNPREDICTABLE" : null),
             (stackPopCount > 0 && !isStackManipulate && !isVariableStackPop ? "Type.POP" + stackPopCount : null),
             (stackPushCount > 0 && !isStackManipulate ? "Type.PUSH" + stackPushCount : null),
+            (rr.name.indexOf("const_") === 1 ? "Type.CONST_LOAD" : null),
             (rr.name.indexOf("load") === 1 ? "Type.VAR_LOAD" : null),
             (rr.name.indexOf("store") === 1 ? "Type.VAR_STORE" : null),
             (rr.name.indexOf("aload") === 1 ? "Type.ARRAY_LOAD" : null),
@@ -67,14 +71,17 @@ res.map((rr, idx, ary) => {
             (rr.name.indexOf("return") > -1 ? "Type.RETURN" : null),
             (isCondition ? "Type.CONDITION" : null),
             (isJump ? "Type.JUMP" : null),
-            (isCpIndex ? "Type.CP_INDEX" : null)
+            (isCpIndex ? "Type.CP_INDEX" : null),
+            (isCompareNumeric ? "Type.COMPARE_NUMERIC" : null),
+            (isMathOp ? "Type.MATH_OP" : null),
+            (isTypeConvert ? "Type.TYPE_CONVERT" : null)
         ].filter(s => s != null)).length > 0 ? "enums(" + types.join(", ") + ")" : "none(Type.class)") +
         ", " +
         ((opUtils = [
-            (isCondition || isJump ? "IoUtility.offsetModifier(1, " + (rr.name.endsWith("_w") ? 4 : 2) + ")" : null),
-            (isCpIndex ? "IoUtility.cpIndex(1, " + (rr.name.endsWith("_w") ? 4 : 2) + ")" : null),
-            (rr.name === "tableswitch" ? "IoUtility.TableswitchOffsetModifier" : null),
-            (rr.name === "lookupswitch" ? "IoUtility.LookupswitchOffsetModifier" : null)
+            (isCondition || isJump ? "CodeUtility.offsetModifier(1, " + (rr.name.endsWith("_w") ? 4 : 2) + ")" : null),
+            (isCpIndex ? "CodeUtility.cpIndex(1, " + (rr.name.endsWith("_w") ? 4 : 2) + ")" : null),
+            (rr.name === "tableswitch" ? "TableswitchOffsetModifier.defaultInst" : null),
+            (rr.name === "lookupswitch" ? "LookupswitchOffsetModifier.defaultInst" : null)
         ].filter(s => s != null)).length > 0 ? "Op.of(" + opUtils.join(", ") + ")" : "null") +
         ")" + (idx < ary.length - 1 ? "," : ";") +
         " // " + rr.operation + "," + (!isStackManipulate ? " stack: " + JSON.stringify(rr.operandStack, undefined, " ").split("\n").map(s => s.trim()).join(" ") + "," : "") + (rr.hashLink != null ? " link: " + baseUrl + "#" + rr.hashLink : "");

@@ -4,7 +4,30 @@ This project does its best to adhere to [Semantic Versioning](http://semver.org/
 
 
 --------
-### [0.4.0](N/A) - 2020-06-29
+### [0.5.0](N/A) - 2020-12-05
+__Decompilation to source code in-progress and first round trip compile/decompile unit tests__
+#### Added
+* A new `twg2.jbcm.ir` package with helper classes for tracking state and data related to decompilation
+* `CodeOffsetGetter` interface implemented by `ChangeCpIndex`
+* `CodeFlow` for helping analyze potential code flow paths through a method
+* Unit tests with tests which perform compilation of source code and check decompilation back to intermediate view
+
+#### Changed
+* `CodeToSource` is in-progress, simple code can be converted, loops, switch statements, and interface/dynamic method calls are still TODO
+* Split `IoUtility` into new `CodeUtility` class and moved static no-op `CpIndexChanger` and `CodeOffsetChanger` into their respective interfaces
+* Renamed `ByteCodeConsumer` -> `BytcodeConsumer`
+* Moved `MethodStack` to new `twg2.jbcm.ir` package
+* Lots of new functionality in `Opcodes` to support to source decompilation
+* Extensive `CompileSource` changes/improvements to support simple use cases like compiling in-memory (although a physical temp file still gets written under the hood)
+* Moved `LookupswitchOffsetModifier` and `TableswitchOffsetModifier` out of `IoUtility` and into their own classes
+
+#### Removed
+* `CpIndexChanger.shiftIndex()` interface method since it was unused and `CodeOffsetChanger` is equivalent
+* Unused classes: `Offset`, `OffsetOpcode`, `Opcode`, `OpcodeObject`
+
+
+--------
+### [0.4.0](https://github.com/TeamworkGuy2/ClassLoading/commit/1d29c1923096438571a751511cd1f2085d708bb9) - 2020-06-29
 #### Added
 * `ClassFileToSource` and `CodeToSource` work-in-progress to convert class file back into Java source code
 * `CONSTANT_CP_Info.toShortString()` added interface method and to implementations

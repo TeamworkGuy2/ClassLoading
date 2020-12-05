@@ -1,6 +1,6 @@
 package twg2.jbcm.toSource;
 
-import twg2.jbcm.MethodStack;
+import twg2.jbcm.ir.MethodStack;
 
 /** Generate the name for a method parameter
  * @author TeamworkGuy2

@@ -2,43 +2,53 @@ package twg2.jbcm;
 
 import twg2.jbcm.modify.CpIndexChanger;
 import twg2.jbcm.modify.CodeOffsetChanger;
+import twg2.jbcm.modify.CodeOffsetGetter;
 
 /**
  * @author TeamworkGuy2
  * @since 2014-4-20
  */
-public final class Op {
+public class Op {
+	private CodeOffsetGetter offsetGetter;
 	private CpIndexChanger cpIndex;
 	private CodeOffsetChanger codeOffset;
 
 	private Op() {}
 
 
-	public final Op add(CpIndexChanger cpIndex) {
+	public Op add(CpIndexChanger cpIndex) {
 		this.cpIndex = cpIndex;
+		// detect if index change implementation is also an offset getter and save it for that purpose
+		if(cpIndex instanceof CodeOffsetGetter) {
+			this.offsetGetter = (CodeOffsetGetter)cpIndex;
+		}
 		return this;
 	}
 
 
-	public final Op add(CodeOffsetChanger codeOffset) {
+	public Op add(CodeOffsetChanger codeOffset) {
 		this.codeOffset = codeOffset;
+		// detect if index change implementation is also an offset getter and save it for that purpose
+		if(codeOffset instanceof CodeOffsetGetter) {
+			this.offsetGetter = (CodeOffsetGetter)codeOffset;
+		}
 		return this;
 	}
 
 
-	public final OpcodeOperations create() {
-		OpcodeOperations oper = new OpcodeOperations(cpIndex, codeOffset);
+	public OpcodeOperations create() {
+		OpcodeOperations oper = new OpcodeOperations(offsetGetter, cpIndex, codeOffset);
 		return oper;
 	}
 
 
-	public static final Op of(CpIndexChanger cpIndex) {
+	public static Op of(CpIndexChanger cpIndex) {
 		Op op = new Op();
 		return op.add(cpIndex);
 	}
 
 
-	public static final Op of(CodeOffsetChanger codeOffset) {
+	public static Op of(CodeOffsetChanger codeOffset) {
 		Op op = new Op();
 		return op.add(codeOffset);
 	}

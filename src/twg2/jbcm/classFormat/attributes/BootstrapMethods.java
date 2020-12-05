@@ -151,6 +151,21 @@ public class BootstrapMethods implements Attribute_Type {
 		}
 
 
+		public CONSTANT_MethodHandle getBootstrapMethodRef() {
+			return bootstrap_method_ref.getCpObject();
+		}
+
+
+		public int getBootstrapArgumentsCount() {
+			return num_bootstrap_arguments;
+		}
+
+
+		public CONSTANT_CP_Info getBootstrapArgument(int index) {
+			return bootstrap_arguments[index].getCpObject();
+		}
+
+
 		@Override
 		public void changeCpIndex(short oldIndex, short newIndex) {
 			IndexUtility.indexChange(bootstrap_method_ref, oldIndex, newIndex);

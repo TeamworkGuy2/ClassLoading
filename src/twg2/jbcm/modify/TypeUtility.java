@@ -1,9 +1,9 @@
 package twg2.jbcm.modify;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
-import twg2.jbcm.IoUtility;
-import twg2.jbcm.MethodStack;
+import twg2.jbcm.CodeUtility;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.ConstantPoolTag;
 import twg2.jbcm.classFormat.CpIndex;
@@ -12,6 +12,7 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Methodref;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_NameAndType;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
+import twg2.jbcm.ir.MethodStack;
 import twg2.jbcm.toSource.ParameterNamer;
 
 /**
@@ -28,7 +29,7 @@ public class TypeUtility {
 	 * @param newIndex the new class constant pool index
 	 */
 	public static void changeCpIndices(byte[] instructions, final int offset, final int oldIndex, final int newIndex) {
-		IoUtility.forEach(instructions, offset, instructions.length - offset, (opcode, code, location) -> {
+		CodeUtility.forEach(instructions, offset, instructions.length - offset, (opcode, code, location) -> {
 			if(opcode.getOperations().getCpIndexModifier() != null) {
 				opcode.getOperations().getCpIndexModifier().changeCpIndexIf(code, location, oldIndex, newIndex);
 			}
@@ -182,6 +183,21 @@ public class TypeUtility {
 	}
 
 
+	public static String getArrayType(int atype) {
+		switch(atype) {
+		case 4: return "boolean";
+		case 5: return "char";
+		case 6: return "float";
+		case 7: return "double";
+		case 8: return "byte";
+		case 9: return "short";
+		case 10: return "int";
+		case 11: return "long";
+		default: throw new RuntimeException("unknown array type " + atype);
+		}
+	}
+
+
 	/** Convert a class to a field descriptor. For example a byte is 'B',
 	 * an int is 'I', a String is 'Ljava/lang/String;' (§4.3).
 	 * @param clas the class name to convert to a field descriptor
@@ -198,9 +214,9 @@ public class TypeUtility {
 		else if(clas == Short.TYPE) { return "S"; }
 		else if(clas == Boolean.TYPE) { return "Z"; }
 		else if(clas == Void.TYPE) { return "V"; }
-		else if(clas.isArray()) { return classNameFieldDescriptor(clas.getName()); }
+		else if(clas.isArray()) { return '[' + classToFieldDescriptor(clas.getComponentType()); }
 		else {
-			return 'L'+classNameFieldDescriptor(clas.getName())+';';
+			return 'L' + classNameFieldDescriptor(clas.getName()) + ';';
 		}
 	}
 
@@ -222,7 +238,7 @@ public class TypeUtility {
 	 * @param dst the string builder to append the resulting field descriptor to
 	 * @see #classToFieldDescriptor(Class)
 	 */
-	public static void classToFieldDescriptor(Class<?> clas, StringBuilder dst) {
+	public static StringBuilder classToFieldDescriptor(Class<?> clas, StringBuilder dst) {
 		if(clas == Byte.TYPE) { dst.append('B'); }
 		else if(clas == Character.TYPE) { dst.append('C'); }
 		else if(clas == Double.TYPE) { dst.append('D'); }
@@ -232,12 +248,16 @@ public class TypeUtility {
 		else if(clas == Short.TYPE) { dst.append('S'); }
 		else if(clas == Boolean.TYPE) { dst.append('Z'); }
 		else if(clas == Void.TYPE) { dst.append('V'); }
-		else if(clas.isArray()) { classNameFieldDescriptor(clas.getName(), dst); }
+		else if(clas.isArray()) {
+			dst.append('[');
+			classToFieldDescriptor(clas.getComponentType(), dst);
+		}
 		else {
 			dst.append('L');
 			classNameFieldDescriptor(clas.getName(), dst);
 			dst.append(';');
 		}
+		return dst;
 	}
 
 
@@ -253,7 +273,7 @@ public class TypeUtility {
 		int index = dst.indexOf(".", pos);
 		while(index > -1) {
 			dst.setCharAt(index, '/');
-			index = dst.indexOf(".", index+1);
+			index = dst.indexOf(".", index + 1);
 		}
 	}
 
@@ -296,11 +316,37 @@ public class TypeUtility {
 	}
 
 
+	/** Extract method parameters from method descriptor string
+	 * @param md the method descriptor
+	 * @param dst destination list to add method parameter types to
+	 * @return the number of parameters extracted
+	 */
+	public static int methodParameters(String md, List<String> dst) {
+		if(md.charAt(0) != '(') {
+			throw new IllegalArgumentException("method descriptor expected to start with '('");
+		}
+
+		String paramsDescriptor = md.substring(1, md.lastIndexOf(')'));
+		String remainingDescriptors = paramsDescriptor;
+		StringBuilder sb = new StringBuilder();
+		int cnt = 0;
+		while(remainingDescriptors.length() > 0) {
+			sb.setLength(0);
+			int read = typeDescriptorToSource(remainingDescriptors, sb);
+			String type = sb.toString();
+			dst.add(type);
+			remainingDescriptors = remainingDescriptors.substring(read);
+			cnt++;
+		}
+		return cnt;
+	}
+
+
 	/** Extract method return type descriptor string to source
 	 * @param fd the field descriptor
-	 * @param dst the string builder to append the resulting field type to
+	 * @param dst the string builder to append the resulting return type to
 	 */
-	public static void methodReturnDescriptorToSource(String md, StringBuilder dst) {
+	public static void methodReturnType(String md, StringBuilder dst) {
 		String returnDescriptor = md.substring(md.lastIndexOf(')') + 1);
 		typeDescriptorToSource(returnDescriptor, dst);
 	}
@@ -336,6 +382,21 @@ public class TypeUtility {
 		else {
 			throw new IllegalArgumentException("unknown type descriptor '" + td + "'");
 		}
+	}
+
+
+	public static String arrayComponentType(String type) {
+		int idx = type.indexOf('[');
+		if(idx == -1) {
+			throw new IllegalArgumentException("Type is not an array: " + type);
+		}
+		return type.substring(0, idx);
+	}
+
+
+	public static String getSimpleTypeName(String fullTypeName) {
+		int idx = fullTypeName.lastIndexOf('.');
+		return fullTypeName.substring(idx + 1);
 	}
 
 

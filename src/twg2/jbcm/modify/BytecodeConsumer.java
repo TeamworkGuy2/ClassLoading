@@ -7,7 +7,7 @@ import twg2.jbcm.Opcodes;
  * @since 2014-4-19
  */
 @FunctionalInterface
-public interface ByteCodeConsumer {
+public interface BytecodeConsumer {
 
 	/** Performs this operation on the given argument.
 	 * @param opcode the opcode of the instruction at the specified location

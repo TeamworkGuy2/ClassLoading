@@ -50,6 +50,16 @@ public class LocalVariableTable implements Attribute_Type, OffsetAttribute {
 	}
 
 
+	public int getLocalVariableTableLength() {
+		return local_variable_table_length;
+	}
+
+
+	public LocalVariablePoint getLocalVariable(int index) {
+		return local_variable_table[index];
+	}
+
+
 	@Override
 	public String getAttributeName() {
 		return attribute_name_index.getCpObject().getString();
@@ -150,10 +160,10 @@ public class LocalVariableTable implements Attribute_Type, OffsetAttribute {
 		short index;
 
 		private AttributeOffsetFunction offsetAction = (int off, int len, int shift) -> {
-			if(start_pc >= off && start_pc < off+len) {
+			if(start_pc >= off && start_pc < off + len) {
 				start_pc += shift;
 			}
-			if(length >= off && length < off+len) {
+			if(length >= off && length < off + len) {
 				length += shift;
 			}
 			// TODO bounds checking and start_pc+length falls on the index of another opcode or the first index
@@ -163,6 +173,16 @@ public class LocalVariableTable implements Attribute_Type, OffsetAttribute {
 
 		public LocalVariablePoint(Code codeParent) {
 			this.parent = codeParent;
+		}
+
+
+		public String getName() {
+			return this.name_index.getCpObject().getString();
+		}
+
+
+		public String getDescriptor() {
+			return this.descriptor_index.getCpObject().getString();
 		}
 
 

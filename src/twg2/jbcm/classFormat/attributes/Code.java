@@ -242,6 +242,7 @@ public class Code implements Attribute_Type {
 	}
 
 
+	// approximately black-boxed based on Eclipse class file view
 	public void toClassString(String tab, StringBuilder str) {
 		str.append(ATTRIBUTE_NAME).append("(stack: ").append(max_stack)
 			.append(", locals: ").append(max_locals).append(",\n").append(tab)
@@ -279,10 +280,6 @@ public class Code implements Attribute_Type {
 				else if(opc.hasBehavior(Opcodes.Type.JUMP)) {
 					str.append(' ').append(i + operand);
 				}
-				//else if(opc.hasBehavior(Opcodes.Type.VAR_STORE)) { ... }
-				//else if(opc.hasBehavior(Opcodes.Type.VAR_LOAD)) { ... }
-				//else if(opc.hasBehavior(Opcodes.Type.ARRAY_STORE)) { ... }
-				//else if(opc.hasBehavior(Opcodes.Type.ARRAY_LOAD)) { ... }
 				else {
 					str.append(' ').append(operand).append(" 0x").append(Integer.toHexString(operand));
 				}

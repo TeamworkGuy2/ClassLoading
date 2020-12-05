@@ -1,9 +1,9 @@
 package twg2.jbcm.toSource;
 
-import twg2.jbcm.MethodStack;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Method_Info;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
+import twg2.jbcm.ir.MethodStack;
 import twg2.jbcm.modify.TypeUtility;
 
 /**
@@ -85,7 +85,7 @@ public class SourceWriter {
 
 
 	public SourceWriter methodDescriptor(CONSTANT_Utf8 type, String constructorName, String methodName, MethodStack methodVars, ParameterNamer paramNamer) {
-		TypeUtility.methodReturnDescriptorToSource(type.getString(), src);
+		TypeUtility.methodReturnType(type.getString(), src);
 		space();
 		
 		if("<clinit>".equals(methodName)) {
@@ -144,7 +144,7 @@ public class SourceWriter {
 
 
 	public SourceWriter writeSourceCode(ClassFile cls, Method_Info method, MethodStack methodStack) {
-		CodeToSource.toSource(cls, method, methodStack, this.getIndent(), this);
+		CodeToSource.toSource(cls, method, methodStack, this);
 		return this;
 	}
 
@@ -180,7 +180,7 @@ public class SourceWriter {
 
 
 
-	private String getIndent() {
+	protected String getIndent() {
 		StringBuilder sb = new StringBuilder(this.indentMark.length() * this.indent);
 		for(int i = 0, size = this.indent; i < size; i++) {
 			sb.append(indentMark);

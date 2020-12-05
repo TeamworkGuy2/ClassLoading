@@ -18,16 +18,12 @@ public class ResourceToClass {
 	 * @param runI the index in the url array of corresponding to the class to run
 	 * once the classes are loaded
 	 * @param cl the classloader to handle loading the classes
-	 * @throws InstantiationException if an instance of the class at
-	 * index <code>runI</code> cannot be created.
-	 * @throws IllegalAccessException if the constructor for the class instance
-	 * cannot be called because it is private, protected, etc.
 	 * @throws IOException if there is any other error loading the urls
+	 * @throws ReflectiveOperationException if there is an error calling the <code>runI</code> class' default constructor
 	 */
-	public ResourceToClass(URL[] urls, int runI, MemoryClassLoader cl) throws InstantiationException, IllegalAccessException, IOException {
+	public ResourceToClass(URL[] urls, int runI, MemoryClassLoader cl) throws IOException, ReflectiveOperationException {
 		Class<?>[] classes = loadClasses(urls, cl);
-		@SuppressWarnings("deprecation")
-		Runnable r = (Runnable)classes[runI].newInstance();
+		Runnable r = (Runnable)classes[runI].getDeclaredConstructor().newInstance();
 		r.run();
 	}
 

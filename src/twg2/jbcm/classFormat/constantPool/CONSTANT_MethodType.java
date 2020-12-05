@@ -63,7 +63,7 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 	public void readData(DataInput in) throws IOException {
 		if(!Settings.cpTagRead) {
 			int tagV = in.readByte();
-			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_Fieldref tag: " + tagV); }
+			if(tagV != TAG) { throw new IllegalStateException("Illegal CONSTANT_MethodType tag: " + tagV); }
 		}
 		descriptor_index = resolver.getExpectCpIndex(in.readShort(), CONSTANT_Utf8.class);
 	}

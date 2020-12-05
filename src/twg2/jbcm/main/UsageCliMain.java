@@ -7,12 +7,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,12 +67,13 @@ public class UsageCliMain {
 			for(int a = 0; a < innerLoops; a++) {
 				base.callTest();
 			}
-			timeBase += (System.nanoTime()-temp);
+			timeBase += (System.nanoTime() - temp);
+
 			temp = System.nanoTime();
 			for(int a = 0; a < innerLoops; a++) {
 				test.callTest();
 			}
-			timeTest += (System.nanoTime()-temp);
+			timeTest += (System.nanoTime() - temp);
 		}
 		System.out.println("Time base: " + timeBase + ", base=" + base.getCount());
 		System.out.println("Time test: " + timeTest + ", test=" + test.getCount());
@@ -230,17 +231,37 @@ public class UsageCliMain {
 	}
 
 
-	private static void compileSourceToClass(File srcJavaFile, File dstClassFile) throws MalformedURLException, ClassNotFoundException {
-		URL path = new File("res/compile").toURI().toURL();
-		URL sourceClassPath = new File("res/compile/source_files").toURI().toURL();
-		URL destinationClassPath = new File("res/compile/class_files").toURI().toURL();
-		URL[] urls = new URL[] {
-			new File("res/compile/source_files/compile/Hello.java").toURI().toURL(),
-		};
-		CompileSource.compile(path, sourceClassPath, destinationClassPath, urls);
+	private static byte[] compileSourceToBytecode(String javaSrc) throws MalformedURLException, ClassNotFoundException {
+		try {
+			File tmpFile = new File("res/tmp/src/CompilerTemp.java");
+			Files.write(tmpFile.toPath(), javaSrc.getBytes("UTF-8"), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+			File sourceFilesPath = new File("res/tmp/src");
+			String classPath = new File("res/tmp/src").getAbsolutePath();
+			File destinationClassPath = new File("res/tmp/bin");
+
+			CompileSource.compile(true, tmpFile, sourceFilesPath, classPath, destinationClassPath);
+
+			var bytecode = Files.readAllBytes(new File("res/tmp/bin/CompilerTemp.class").toPath());
+
+			tmpFile.delete();
+
+			return bytecode;
+		} catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
+	}
+
+
+	private static void compileSourceFileToClass(File srcJavaFile, File dstClassFile) throws ClassNotFoundException, IOException {
+		File entryFile = new File("res/tmp/src/twg2/compileTest/Hello.java");
+		File sourceFilesPath = new File("res/tmp/src");
+		String classPath = new File("res/tmp/src/twg2/compileTest").getAbsolutePath();
+		File destinationClassPath = new File("res/tmp/bin");
+
+		CompileSource.compile(true, entryFile, sourceFilesPath, classPath, destinationClassPath);
 
 		RuntimeReloadMain reload = new RuntimeReloadMain();
-		reload.loadRun("res/compile/class_files", "compile.Hello", "run", (String[])null);
+		reload.loadRun("res/tmp/bin", "twg2.compileTest.Hello", "run", (String[])null);
 
 		//Runnable thing = (Runnable)classes[0].newInstance();
 		//thing.run();
@@ -253,11 +274,6 @@ public class UsageCliMain {
 		// compileSourceToClass();
 
 		//File file = new File("bin/twg2.jbcm.classFormat/test/UnitTest.class");
-		//File file = new File("C:/Users/TeamworkGuy2/Downloads/apache-tomcat-7.0.42-windows-x64/apache-tomcat-7.0.42-windows-x64/webapps/Project5/WEB-INF/classes/threeTierWebApplication/ProxyTable.class");
-		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/ClassLoading/bin/twg2.jbcm.classFormat/Field_Info.class");
-		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/FileIO/bin/utilities/vlcConverter/VLCUtility.class");
-		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/Miscellaneous/bin/classTests/Thing.class");
-		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/Miscellaneous/bin/classTests/Thing.class");
 
 		//UnitTest.loadPrintClassInfo(System.out/*new PrintStream(new File("output-parsed.txt"))*/, file);
 	}

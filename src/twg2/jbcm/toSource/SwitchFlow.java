@@ -1,12 +1,12 @@
 package twg2.jbcm.toSource;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import twg2.collections.primitiveCollections.IntArrayList;
 import twg2.jbcm.CodeFlow;
 import twg2.jbcm.Opcodes;
-import twg2.jbcm.Opcodes.Type;
 import twg2.jbcm.ir.SwitchCase;
 
 import static twg2.jbcm.CodeUtility.loadOperands;
@@ -95,17 +95,23 @@ public class SwitchFlow {
 		CodeFlow.getFlowPaths(targetIdx, instr, caseFlowPath);
 
 		// potential end index (probably redundant once code flow is working)
-		var endJumpIdx = IterateCode.nextJumpOrEndIndex(targetIdx, instr);
-		var endOpc = Opcodes.get(instr[endJumpIdx] & 0xFF);
+		var maxCodeFlowIndex = CodeFlow.maxIndex(caseFlowPath);
 
-		if(endOpc.hasBehavior(Type.JUMP)) {
-			var jumpTarget = loadOperands(endOpc.getOperandCount(), instr, endJumpIdx);
-			var caseEndTarget = endJumpIdx + (endOpc.getOperandCount() == 2 ? (short)jumpTarget : jumpTarget);
-			return new SwitchCase(caseMatch, targetIdx, endJumpIdx, caseEndTarget, caseFlowPath);
+		return new SwitchCase(caseMatch, targetIdx, maxCodeFlowIndex, caseFlowPath);
+	}
+
+
+	/** Add all of the code flow from the switch cases to the {@code instrFlow}
+	 * @param switchCases
+	 * @param switchDefault
+	 * @param instrFlows
+	 */
+	public static void loadCasesToFlow(List<SwitchCase> switchCases, SwitchCase switchDefault, List<IntArrayList> instrFlows) {
+		for(int i = 0, size = switchCases.size(); i < size; i++) {
+			instrFlows.add(switchCases.get(i).getCodeFlow().copy());
 		}
-		else {
-			return new SwitchCase(caseMatch, targetIdx, endJumpIdx, caseFlowPath);
-		}
+
+		instrFlows.add(switchDefault.getCodeFlow().copy());
 	}
 
 
@@ -140,24 +146,27 @@ public class SwitchFlow {
 	}
 
 
-	// TODO old from before CodeFlow
-	public static int commonSwitchEndIndex_OLD(List<SwitchCase> cases, byte[] instr) {
-		int minEnd = Integer.MAX_VALUE;
-		int maxEnd = -1;
-		for(var caseObj : cases) {
-			// TODO how to handle IF_* in switch case
-			if(caseObj.hasEndTarget) {
-				var jumpTarget = caseObj.caseEndTarget;
-				minEnd = Math.min(minEnd, jumpTarget);
-				maxEnd = Math.max(maxEnd, jumpTarget);
-			}
+	/** Check if the switch cases all return by the end of the case
+	 */
+	public static int maxSwitchCodeFlowIndex(List<SwitchCase> cases, SwitchCase defaultCase, byte[] instr) {
+		if(isSwitchSimplePacked(cases, defaultCase, instr)) {
+			return maxCodeFlowMaxIndex(cases, defaultCase);
 		}
-		return minEnd == maxEnd ? maxEnd : -1;
+
+		return -1;
 	}
 
 
-	// TODO old from before CodeFlow
-	public static boolean isSwitchPacked_OLD(List<SwitchCase> cases, byte[] instr) {
+	/** Check whether the max code flow index for each switch case occurs immediately prior to the start of the next case.
+	 * @param switchCases
+	 * @param defaultCase
+	 * @param instr
+	 * @return whether all the switch case statements return or throw by the end of each case
+	 */
+	public static boolean isSwitchSimplePacked(List<SwitchCase> switchCases, SwitchCase defaultCase, byte[] instr) {
+		var cases = new ArrayList<SwitchCase>(switchCases);
+		cases.add(defaultCase);
+		cases.sort(SwitchCase.CASE_TARGET_INDEX_COMPARATOR);
 		int prevEnd = -1;
 		int prevOperands = 0;
 		for(var caseObj : cases) {
@@ -165,12 +174,23 @@ public class SwitchFlow {
 			if(prevEnd >= 0 && nextIndexAfterPrev < caseObj.caseTarget) {
 				return false;
 			}
-			prevEnd = caseObj.caseEndIdx;
+			prevEnd = caseObj.codeFlowMaxIndex;
 			var endOpc = Opcodes.get(instr[prevEnd] & 0xFF);
 			var operands = endOpc.getOperandCount();
 			prevOperands = operands;
 		}
 		return true;
+	}
+
+
+	private static int maxCodeFlowMaxIndex(List<SwitchCase> switchCases, SwitchCase defaultCase) {
+		int max = defaultCase.codeFlowMaxIndex;
+		for(int i = 0, size = switchCases.size(); i < size; i++) {
+			int index = switchCases.get(i).codeFlowMaxIndex;
+			max = Math.max(index, max);
+		}
+
+		return max;
 	}
 
 }

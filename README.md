@@ -9,22 +9,23 @@ See the `twg2.jbcm.main.UsageCliMain` class for a simple command line interface 
 
 Reference: [Java Virtual Machine Spec (Java 9)](https://docs.oracle.com/javase/specs/jvms/se9/html/index.html)
 
-### `twg2.jbcm.classFormat`
+Packages:
+### twg2.jbcm.classFormat
 Contains implementation of the [class file format](https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html)
 with related attributes (`twg2.jbcm.classFormat.attributes`) and constant pool types (`twg2.jbcm.classFormat.constantPool`).
 
-### `twg2.jbcm` and `twg2.jbcm.modify`
+### twg2.jbcm & twg2.jbcm.modify
 Interfaces and utilities for searching and modifying class files.
 
-### `twg2.jbcm`
+### twg2.jbcm
 Utilities and the `Opcodes` enum containing detailed, programatic information about the [Java instruction set opcodes](https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-6.html#jvms-6.5).
-Also see the [extract-opcodes.js] file for how the enum literals in `Opcodes` are generated.
+Also see [extract-opcodes.js](extract-opcodes.js) file for how the enum literals in `Opcodes` are generated.
 
-### `twg2.jbcm.dynamicModification` and `twg2.jbcm.parserExamples`
+### twg2.jbcm.dynamicModification & twg2.jbcm.parserExamples
 Classes used by the example and test packages.
 
-### `twg2.jbcm.runtimeLoading`
+### twg2.jbcm.runtimeLoading
 Runtime class loading.
 
-### `twg2.jbcm.main`
+### twg2.jbcm.main
 Example console apps.

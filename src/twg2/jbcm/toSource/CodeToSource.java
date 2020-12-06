@@ -1,9 +1,10 @@
 package twg2.jbcm.toSource;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
+import twg2.collections.primitiveCollections.IntArrayList;
 import twg2.jbcm.Opcodes;
 import twg2.jbcm.Opcodes.Type;
 import twg2.jbcm.classFormat.ClassFile;
@@ -23,7 +24,7 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_String;
 import twg2.jbcm.ir.JumpConditionInfo;
 import twg2.jbcm.ir.MethodStack;
 import twg2.jbcm.ir.OperandInfo;
-import twg2.jbcm.ir.SwitchCase;
+import twg2.jbcm.ir.Switch;
 import twg2.jbcm.ir.VariableInfo;
 import twg2.jbcm.modify.TypeUtility;
 
@@ -45,33 +46,41 @@ public class CodeToSource {
 	public static void toSource(ClassFile cls, Method_Info method, MethodStack methodStack, SourceWriter dst) {
 		Code code = method.getCode();
 		byte[] instr = code.getCode();
-		//BitSet instrIndices = IterateCode.markInstructions(instr);
+		int instrCount = instr.length;
+		//BitSet instrUsed = new BitSet(instr.length); // track which instructions have already run through the loop
 
 		var loops = new ArrayList<JumpConditionInfo>(); // track GOTO/IF_* loops detected in the code
 		// pairs of values, the first is the case match value the second is the target index
-		var switchCases = new ArrayList<SwitchCase>();
-		AtomicReference<SwitchCase> switchDefault = new AtomicReference<>();
-		int switchEndIdx = -1;
+		Switch curSwitch = null;
 		int conditionUnfinishedIdx = -1;
-		String indentMark = dst.indentMark;
-		String indentation = dst.getIndent();
+		Indent indent = dst.getIndent();
 		StringBuilder tmp = new StringBuilder();
 		var tmpList = new ArrayList<String>();
 		var tmpList2 = new ArrayList<String>();
 		StringBuilder str = dst.src;
 
-		str.setLength(0);
-
 		str.append(" // stack: ").append(code.getMaxStack())
-			.append(", locals: ").append(code.getMaxLocals()).append(",\n").append(indentation)
-			.append("code: ").append(instr.length).append(" [\n");
+			.append(", locals: ").append(code.getMaxLocals()).append("\n");
 
-		for(int i = 0, instrCnt = instr.length; i < instrCnt; i++) {
+		var instrFlows = new ArrayList<IntArrayList>(); // pairs of index start (inclusive) and end (inclusive) indexes to control which portions of the code are processed by the main loop
+		instrFlows.add(new IntArrayList());
+		int i = 0;
+		int endIdx = instrCount - 1;
+
+		for( ; i <= endIdx; i++) {
 			Opcodes opc = Opcodes.get(instr[i] & 0xFF);
-			boolean isWide = false;
 			int numOperands = opc.getOperandCount();
+			boolean isWide = false;
 			// read following bytes of code and convert them to an operand
 			int operand = loadOperands(numOperands, instr, i);
+
+			// skip instructions that have already been processed (since code flow can be non-linear with branches, loops, and switches
+			//if(instrUsed.get(i)) {
+			//	i += (numOperands < 0 ? 0 : numOperands);
+			//	continue;
+			//}
+
+			//instrUsed.set(i);
 
 			// end if-else blocks and loops based on ending instruction index tracked when if_* and goto instructions are first encountered
 			var curCond = conditionUnfinishedIdx > -1 ? loops.get(conditionUnfinishedIdx) : null;
@@ -79,58 +88,63 @@ public class CodeToSource {
 				// if-statement (loops start with GOTO, handled elsewhere)
 				if(curCond.getOpcode() != Opcodes.GOTO && !curCond.isFinished()) {
 					curCond.finish();
-					indentation = indentation.substring(0, indentation.length() - indentMark.length());
-					str.append(indentation).append('}').append('\n');
+					indent.dedent();
+					str.append(indent).append('}').append('\n');
 				}
 				conditionUnfinishedIdx--;
 				curCond = conditionUnfinishedIdx > -1 ? loops.get(conditionUnfinishedIdx) : null;
 			}
 
 			// switch cases
-			if(switchDefault.get() != null && switchDefault.get().caseTarget == i) {
-				switchDefault.get().finish();
-				str.append("default: ").append("// offset ").append(switchDefault.get().caseTarget);
-			}
-			var switchCaseIdx = SwitchFlow.findSwitchCase(i, switchCases, 0);
-			while(switchCaseIdx > -1) {
-				var caseObj = switchCases.get(switchCaseIdx);
-				caseObj.finish();
-				var deIndent = indentation.substring(0, indentation.length() - indentMark.length());
-				str.append(deIndent).append("case ").append(caseObj.caseMatch).append(": ").append("// offset ").append(caseObj.caseTarget).append('\n');
-				switchCaseIdx = SwitchFlow.findSwitchCase(i, switchCases, switchCaseIdx + 1);
-			}
-			if(i == switchEndIdx) {
-				indentation = indentation.substring(0, indentation.length() - indentMark.length());
-				str.append(indentation).append('}').append('\n');
+			if(curSwitch != null) {
+				if(curSwitch.switchDefault.caseTarget == i) {
+					curSwitch.finish(curSwitch.switchDefault);
+					str.append("default: ").append("// offset ").append(curSwitch.switchDefault.caseTarget);
+				}
+				var switchCaseIdx = SwitchFlow.findSwitchCase(i, curSwitch.switchCases, 0);
+				while(switchCaseIdx > -1) {
+					var caseObj = curSwitch.switchCases.get(switchCaseIdx);
+					caseObj.finish();
+					str.append(indent.toDedent()).append("case ").append(caseObj.caseMatch).append(": ").append("// offset ").append(caseObj.caseTarget).append('\n');
+					switchCaseIdx = SwitchFlow.findSwitchCase(i, curSwitch.switchCases, switchCaseIdx + 1);
+				}
 			}
 
-			str.append(indentation).append(isWide ? "WIDE " : "");
+			str.append(indent).append(isWide ? "WIDE " : "");
 
 			// unpredictable operand length instructions
 			if(opc == Opcodes.WIDE) {
-				// TODO doesn't properly read extra wide operand bytes
+				// TODO need to read extra wide operand bytes in all possible cases
 				isWide = true;
 				i++; // because wide instructions are wrapped around other instructions
 				opc = Opcodes.get(instr[i] & 0xFF);
 				numOperands = opc.getOperandCount();
+				//instrUsed.set(i);
 			}
+			// switch
 			else if(numOperands == Opcodes.Const.UNPREDICTABLE) {
 				if(opc == Opcodes.TABLESWITCH) {
-					i += SwitchFlow.loadTableSwitch(i, instr, switchCases, switchDefault);
-					var switchIndex = methodStack.popOperand();
-					indentation += indentMark;
-					str.append("switch(" + switchIndex.getExpression() + ") {");
+					curSwitch = Switch.loadTableSwitch(i, instr);
 				}
 				else if(opc == Opcodes.LOOKUPSWITCH) {
-					i += SwitchFlow.loadLookupSwitch(i, instr, switchCases, switchDefault);
-					var switchKey = methodStack.popOperand();
-					indentation += indentMark;
-					str.append("switch(" + switchKey.getExpression() + ") {");
+					curSwitch = Switch.loadLookupSwitch(i, instr);
 				}
+				int origI = i;
+				i += curSwitch.switchInstSize;
+				//instrUsed.set(origI, i);
+				var switchKey = methodStack.popOperand();
+				indent.indent();
+				str.append("switch(" + switchKey.getExpression() + ") {");
+
+				//var instrFlow = last(instrFlows);
+				//instrFlow.add(curSwitch.switchEndIdx > -1 ? ~curSwitch.switchEndIdx : ~i); // TODO technically we wouldn't want to restart at the current index
+				// need some unit tests to check different types of switches
+				// can a switch with fall through cases still have a common end index, 'break' instructions should lead to a common end index, what if the default throws, etc?
+				//instrFlow.add(endIdx);
+
+				//SwitchFlow.loadCasesToFlow(curSwitch.switchCases, curSwitch.switchDefault, instrFlows);
 
 				// TODO debugging
-				var commonEndIdx = SwitchFlow.commonSwitchEndIndex(switchCases, switchDefault.get(), instr);
-				switchEndIdx = commonEndIdx;
 				//str.append(" // common end: " + commonEndIdx);
 				//for(var caseObj : switchCases) {
 				//	str.append('\n').append(indentation).append(indentMark).append("// case " + caseObj.caseMatch + ": [" + caseObj.caseTarget + ", " + caseObj.caseEndIdx + "]" + (caseObj.caseEndTarget > 0 ? " jump to " + caseObj.caseEndTarget : ""));
@@ -138,15 +152,19 @@ public class CodeToSource {
 				//}
 				//str.append('\n').append(indentation).append(indentMark).append("// default: [" + switchDefault.get().caseTarget + ", " + switchDefault.get().caseEndIdx + "]" + (switchDefault.get().caseEndTarget > 0 ? " jump to " + switchDefault.get().caseEndTarget : ""));
 
-				//if(!packed) {
-				//	throw new IllegalStateException(opc + " case code ranges are not tightly packed or contain conditional jumps, decompilation not yet supported");
+				//if(curSwitch.switchEndIdx == -1) {
+				//	throw new IllegalStateException(opc + " switch statement common end index could not be found, cannot decompile");
 				//}
 			}
 
 			if(opc.hasBehavior(Type.CONST_LOAD)) {
 				Object constValue = opc.getConstantValue();
 				Class<?> constType = constValue != null ? tryGetPrimitiveType(constValue.getClass()) : Object.class;
-				methodStack.addOperand(new OperandInfo(constValue.toString(), constType.getName(), opc));
+				try {
+					methodStack.addOperand(new OperandInfo(constValue.toString(), constType.getName(), opc));
+				} catch(Exception ex) {
+					System.err.println(ex);
+				}
 			}
 			else if(opc == Opcodes.BIPUSH || opc == Opcodes.SIPUSH) {
 				methodStack.addOperand(new OperandInfo(Integer.toString(operand), (opc == Opcodes.BIPUSH ? Byte.TYPE : Short.TYPE).getName(), opc));
@@ -272,18 +290,20 @@ public class CodeToSource {
 					}
 				}
 
+				var condInfo = JumpConditionInfo.loadConditionFlow(opc, i, (short)operand, instr);
+
 				// standard if-statement
 				if((short)operand > 0) {
-					loops.add(new JumpConditionInfo(opc, i, (short)operand));
+					loops.add(condInfo);
 					conditionUnfinishedIdx = loops.size() - 1;
-					indentation += indentMark;
+					indent.indent();
 					tmp.setLength(0);
 					tmp.append(lhs.getExpression()).append(' ').append(opc.getComparisonSymbolInverse()).append(' ').append(rhs);
 					str.append("if(").append(tmp).append(") {");
 				}
 				// loop with if_* at the end and jump backward
 				else {
-					int loopIdx = findLoopStart(i, (short)operand, loops);
+					int loopIdx = JumpConditionInfo.findLoopStart(i, (short)operand, loops);
 
 					if(loopIdx == -1) {
 						throw new IllegalStateException("if_* jumps backward but no loop start point found at " + i);
@@ -293,14 +313,15 @@ public class CodeToSource {
 						conditionUnfinishedIdx--;
 					}
 					loops.get(loopIdx).finish();
-					indentation = indentation.substring(0, indentation.length() - indentMark.length());
+					indent.dedent();
 					tmp.setLength(0);
 					tmp.append(lhs.getExpression()).append(' ').append(opc.getComparisonSymbol()).append(' ').append(rhs);
 					str.append("} while(").append(tmp).append(");");
 				}
 			}
 			else if(opc == Opcodes.GOTO) {
-				int loopIdx = findLoopStart(i, (short)operand, loops);
+				int loopIdx = JumpConditionInfo.findLoopStart(i, (short)operand, loops);
+				int loopEndIdx = JumpConditionInfo.findLoopEnd(i, numOperands, (short)operand, loops);
 
 				// standard if-else statement
 				if(loopIdx > -1) {
@@ -308,13 +329,18 @@ public class CodeToSource {
 						conditionUnfinishedIdx--;
 					}
 					loops.get(loopIdx).finish();
-					indentation = indentation.substring(0, indentation.length() - indentMark.length());
+					indent.dedent();
 					str.append('}');
 				}
+				else if(loopEndIdx > -1) {
+					loops.get(loopEndIdx).finish();
+					indent.dedent();
+					str.append('}').append('\n').append(indent).append("else ");
+				}
 				else {
-					loops.add(new JumpConditionInfo(opc, i, (short)operand));
+					loops.add(JumpConditionInfo.loadConditionFlow(opc, i, (short)operand, instr));
 					conditionUnfinishedIdx = loops.size() - 1;
-					indentation += indentMark;
+					indent.indent();
 					str.append("do {");
 				}
 			}
@@ -387,7 +413,7 @@ public class CodeToSource {
 					methodCallExpression(methodRef, staticClass, tmpList, tmpList2, returnType, methodStack, opc, tmp, str);
 				}
 				else if(opc == Opcodes.INVOKEDYNAMIC) {
-					Opcodes nextOpc = i + (numOperands < 0 ? 0 : numOperands) + 1 < instrCnt ? Opcodes.get(instr[i + (numOperands < 0 ? 0 : numOperands) + 1] & 0xFF) : null;
+					Opcodes nextOpc = i + (numOperands < 0 ? 0 : numOperands) + 1 < instrCount ? Opcodes.get(instr[i + (numOperands < 0 ? 0 : numOperands) + 1] & 0xFF) : null;
 					if(nextOpc == null || nextOpc != Opcodes.INVOKESTATIC) {
 						throw new RuntimeException("unsupported invokedynamic call, next instruction: " + nextOpc);
 					}
@@ -402,6 +428,7 @@ public class CodeToSource {
 					// TODO handle lambda decompiling or at least print out what the call looks like
 					i += (numOperands < 0 ? 0 : numOperands); // skip next instruction which invokes the lambda
 					numOperands = opc.getOperandCount();
+					//instrUsed.set(i);
 					// java.lang.invoke.CallSite res = java.lang.invoke.LambdaMetafactory.metafactory(MethodHandles.lookup(), "String", java.lang.invoke.MethodType, java.lang.invoke.MethodType, java.lang.invoke.MethodHandle, java.lang.invoke.MethodType);
 				}
 				else if(opc == Opcodes.INVOKESPECIAL) {
@@ -437,14 +464,16 @@ public class CodeToSource {
 				var arrayref = methodStack.popOperand();
 				methodStack.addOperand(new OperandInfo(arrayref.getExpression() + ".length", "int", opc));
 			}
+			else if(opc == Opcodes.ATHROW) {
+				var objectref = methodStack.popOperand();
+				str.append("throw").append(' ').append(objectref.getExpression()).append(';');
+			}
 			/*
 			TODO:
-			ATHROW
 			CHECKCAST
 			INSTANCEOF
 			MONITORENTER
 			MONITOREXIT
-			WIDE
 			MULTIANEWARRAY
 			*/
 			else if(opc.hasBehavior(Opcodes.Type.CP_INDEX) && operand < cls.getConstantPoolCount()) {
@@ -455,29 +484,54 @@ public class CodeToSource {
 			}
 			str.append('\n');
 
+			if(curSwitch != null) {
+				if(i == curSwitch.switchEndIdx) {
+					indent.dedent();
+					str.append(indent).append('}').append('\n');
+					curSwitch = null;
+				}
+			}
+
 			i += (numOperands < 0 ? 0 : numOperands);
+
+			// next code flow if current one is finished
+			if(i >= endIdx) {
+				var instrFlow = last(instrFlows);
+				if(instrFlow != null) {
+					if(instrFlow.size() == 0) {
+						// don't remove the root flow
+						if(instrFlows.size() > 1) {
+							instrFlows.remove(instrFlows.size() - 1);
+						}
+					}
+					else {
+						endIdx = instrFlow.pop();
+						endIdx = endIdx < 1 ? ~endIdx : endIdx;
+						i = instrFlow.pop();
+						i = i < 0 ? ~i : i;
+					}
+				}
+			}
 		}
 
-		var tab = indentation;
-		str.append(tab).append("],\n").append(tab);
+		var tab = indent;
+		str.append("\n").append(tab);
 
 		var exception_table = code.getExceptionTable();
-		str.append("exceptions: ").append(exception_table.length).append(" [");
+		str.append("// exceptions: ").append(exception_table.length).append(" [");
 		if(exception_table.length > 0) { str.append("\n").append(tab); }
-		for(int i = 0; i < exception_table.length - 1; i++) {
-			str.append(exception_table[i]).append(",\n").append(tab);
+		for(int j = 0; j < exception_table.length - 1; j++) {
+			str.append("// ").append(exception_table[j]).append(",\n").append(tab);
 		}
-		if(exception_table.length > 0) { str.append(exception_table[exception_table.length - 1]); }
-		str.append("],\n").append(tab);
+		if(exception_table.length > 0) { str.append("// ").append(exception_table[exception_table.length - 1]); }
 
 		var attributes = code.getAttributes();
-		str.append("attributes: ").append(attributes.length).append(" [");
+		str.append("// attributes: ").append(attributes.length).append(" [");
 		if(attributes.length > 0) { str.append("\n").append(tab); }
-		for(int i = 0; i < attributes.length - 1; i++) {
-			str.append(attributes[i]).append(",\n").append(tab);
+		for(int j = 0; j < attributes.length - 1; j++) {
+			str.append("// ").append(attributes[j]).append(",\n").append(tab);
 		}
-		if(attributes.length > 0) { str.append(attributes[attributes.length - 1]); }
-		str.append("])");
+		if(attributes.length > 0) { str.append("// ").append(attributes[attributes.length - 1]); }
 	}
 
 
@@ -531,22 +585,6 @@ public class CodeToSource {
 	}
 
 
-	private static int findLoopStart(int curIdx, int jumpRelative, List<JumpConditionInfo> loops) {
-		// Loops are generally compiled using a GOTO and an IF_* instruction
-		// form 1: [..., GOTO <setup_if[0]>, instructions[], setup_if[], IF_* <instructions[0]>, ...]
-		if(jumpRelative < 0) {
-			var jumpToIdx = curIdx + jumpRelative - 3; // GOTO has a 2 byte operand so -3 is the GOTO instruction index right before the jump destination (which is the first instruction in a loop)
-			for(int i = loops.size() - 1; i >= 0; i--) {
-				var jc = loops.get(i);
-				if(jc.getOpcodeIndex() == jumpToIdx) {
-					return i;
-				}
-			}
-		}
-		return -1;
-	}
-
-
 	public static Class<?> tryGetPrimitiveType(Class<?> type) {
 		if(type == Boolean.class) {
 			return Boolean.TYPE;
@@ -575,6 +613,12 @@ public class CodeToSource {
 		else {
 			return null;
 		}
+	}
+
+
+	private static <T> T last(List<T> lists) {
+		int listSize = lists.size();
+		return listSize > 0 ? lists.get(listSize - 1) : null;
 	}
 
 }

@@ -46,6 +46,15 @@ public class ClassFileToSource {
 		}
 		dst.openBracket();
 
+		fieldsToSource(cls, dst, decompile);
+
+		methodsToSource(cls, dst, decompile, null);
+
+		dst.closeBracket();
+	}
+
+
+	public static void fieldsToSource(ClassFile cls, SourceWriter dst, boolean decompile) {
 		//for(int i = 1, size = cls.getConstantPoolCount(); i < size; i++) {
 		//	dst.append("Constant " + i + ": " + cls.getConstantPoolIndex(i).getCpObject().toString());
 		//}
@@ -60,6 +69,13 @@ public class ClassFileToSource {
 			}
 		}
 		dst.newln();
+	}
+
+
+	public static void methodsToSource(ClassFile cls, SourceWriter dst, boolean decompile, String methodNameFilter) {
+		String binaryClassName = cls.getClassIndex().getCpObject().getName().getString();
+		String fullClassName = binaryClassName.replace('/', '.');
+		String className = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
 
 		// Methods
 		int methodCount = cls.getMethodCount();
@@ -68,15 +84,16 @@ public class ClassFileToSource {
 				Method_Info method = cls.getMethod(i);
 
 				try {
-					methodToSource(cls, fullClassName, className, method, dst, decompile);
+					if(methodNameFilter == null || method.getName().getString().contains(methodNameFilter)) {
+						methodToSource(cls, fullClassName, className, method, dst, decompile);
+					}
 				} catch(Exception ex) {
 					// TODO debugging (think we still need to add parameters to MethodStack class)
-					throw ex;
+					throw new RuntimeException(fullClassName + "." + method.getName().getString() + "()", ex);
 				}
 				dst.newln();
 			}
 		}
-		dst.closeBracket();
 	}
 
 

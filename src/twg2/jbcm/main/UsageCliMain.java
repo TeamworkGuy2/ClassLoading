@@ -117,9 +117,16 @@ public class UsageCliMain {
 			input = in.nextLine();
 			classpath = input;
 		case "decompile":
+			String methodFilter = null;
 			if(classFiles.size() < 1) {
 				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print source: ");
 				input = in.nextLine();
+				// allow file names like "\bin\twg2\jbcm\modify\TypeUtility.class isPrimitive()
+				if(input.endsWith("()")) {
+					int spaceIdx = input.lastIndexOf(' ');
+					methodFilter = input.substring(spaceIdx + 1, input.length() - 2);
+					input = input.substring(0, spaceIdx);
+				}
 				File file = getClassPath(fs, classpath, input).toFile();
 				cls = ClassFile.load(file);
 			}
@@ -127,7 +134,12 @@ public class UsageCliMain {
 				cls = classFiles.get(0);
 			}
 			writer = new SourceWriter("\t", "\n");
-			ClassFileToSource.toSource(cls, writer, true);
+			if(methodFilter == null) {
+				ClassFileToSource.toSource(cls, writer, true);
+			}
+			else {
+				ClassFileToSource.methodsToSource(cls, writer, true, methodFilter);
+			}
 			System.out.println(writer.toString());
 			break;
 		case "printClass":
@@ -269,11 +281,18 @@ public class UsageCliMain {
 
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+		var codes = new int[] { 0, 1, 5, 122, Integer.MAX_VALUE - 1, Integer.MAX_VALUE };
+		for(var code : codes) {
+			System.out.println(code + " (" + (~code) + ") = " + ~(~code));
+		}
+
 		interactiveClassLoad();
 
 		// compileSourceToClass();
 
 		//File file = new File("bin/twg2.jbcm.classFormat/test/UnitTest.class");
+		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/ClassLoading/bin/twg2.jbcm.classFormat/Field_Info.class");
+		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/FileIO/bin/utilities/vlcConverter/VLCUtility.class");
 
 		//UnitTest.loadPrintClassInfo(System.out/*new PrintStream(new File("output-parsed.txt"))*/, file);
 	}

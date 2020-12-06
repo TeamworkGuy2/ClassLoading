@@ -63,7 +63,7 @@ public final class IoUtility {
 	 * a long by {@code (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3]}
 	 */
 	public static long readLong(byte[] b, int offset) {
-		return ((long)b[offset] << 56) |
+		return ((long)(b[offset] & 0xFF) << 56) |
 				((long)(b[offset+1] & 0xFF) << 48) |
 				((long)(b[offset+2] & 0xFF) << 40) |
 				((long)(b[offset+3] & 0xFF) << 32) |
@@ -81,7 +81,10 @@ public final class IoUtility {
 	 * an integer by {@code (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3]}
 	 */
 	public static int readInt(byte[] b, int offset) {
-		return (b[offset] << 24) | (b[offset+1] << 16) | (b[offset+2] << 8) | b[offset+3];
+		return ((b[offset] & 0xFF) << 24) |
+				((b[offset+1] & 0xFF) << 16) |
+				((b[offset+2] & 0xFF) << 8) |
+				(b[offset+3] & 0xFF);
 	}
 
 
@@ -92,7 +95,7 @@ public final class IoUtility {
 	 * a short by {@code (b[offset] << 8) | b[offset+1]}
 	 */
 	public static short readShort(byte[] b, int offset) {
-		return (short)((b[offset] << 8) | b[offset+1]);
+		return (short)(((b[offset] & 0xFF) << 8) | (b[offset+1] & 0xFF));
 	}
 
 

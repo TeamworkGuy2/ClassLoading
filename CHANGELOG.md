@@ -4,7 +4,19 @@ This project does its best to adhere to [Semantic Versioning](http://semver.org/
 
 
 --------
-### [0.5.0](N/A) - 2020-12-05
+### [0.5.1](N/A) - 2020-12-05
+__Fix `switch` statements to decompile much more accurately based on code flow analysis. Start work on `if` statements.__
+#### Added
+* new `Indent` class to handle `SourceWriter` indentation
+* `Switch` to handle switch code flow initialization and info
+
+#### Changed
+* Add code flow analysis initialization and info to `JumpConditionInfo`
+* Assume that a forward goto right before a condition is an `else` statement
+
+
+--------
+### [0.5.0](https://github.com/TeamworkGuy2/ClassLoading/commit/2497bc4caaa27e6574afad64cace3475238da9f2) - 2020-12-05
 __Decompilation to source code in-progress and first round trip compile/decompile unit tests__
 #### Added
 * A new `twg2.jbcm.ir` package with helper classes for tracking state and data related to decompilation

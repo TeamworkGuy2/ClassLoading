@@ -12,13 +12,12 @@ import twg2.jbcm.modify.TypeUtility;
  */
 public class SourceWriter {
 	StringBuilder src;
-	String indentMark;
-	int indent;
+	Indent indent;
 	String newln;
 
 
 	public SourceWriter(String indentMark, String newln) {
-		this.indentMark = indentMark;
+		this.indent = new Indent(indentMark);
 		this.newln = newln;
 		this.src = new StringBuilder();
 	}
@@ -109,7 +108,7 @@ public class SourceWriter {
 
 
 	public SourceWriter openBracket() {
-		indent++;
+		indent.indent();
 		src.append(" {").append(newln);
 		writeIndent();
 		return this;
@@ -117,7 +116,7 @@ public class SourceWriter {
 
 
 	public SourceWriter closeBracket() {
-		indent--;
+		indent.dedent();
 		src.append(newln);
 		writeIndent();
 		src.append('}').append(newln);
@@ -138,7 +137,7 @@ public class SourceWriter {
 
 
 	public SourceWriter writeClassCode(ClassFile cls, Method_Info method, MethodStack methodStack) {
-		method.getCode().toClassString(this.getIndent(), this.src);
+		method.getCode().toClassString(this.getIndent().getIndent(), this.src);
 		return this;
 	}
 
@@ -180,19 +179,13 @@ public class SourceWriter {
 
 
 
-	protected String getIndent() {
-		StringBuilder sb = new StringBuilder(this.indentMark.length() * this.indent);
-		for(int i = 0, size = this.indent; i < size; i++) {
-			sb.append(indentMark);
-		}
-		return sb.toString();
+	protected Indent getIndent() {
+		return indent;
 	}
 
 
 	private void writeIndent() {
-		for(int i = 0, size = this.indent; i < size; i++) {
-			src.append(indentMark);
-		}
+		indent.writeTo(src);
 	}
 
 

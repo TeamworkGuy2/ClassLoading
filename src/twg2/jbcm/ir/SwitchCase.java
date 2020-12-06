@@ -2,7 +2,7 @@ package twg2.jbcm.ir;
 
 import java.util.Comparator;
 
-import twg2.collections.primitiveCollections.IntList;
+import twg2.collections.primitiveCollections.IntArrayList;
 import twg2.jbcm.CodeFlow;
 
 /**
@@ -17,7 +17,7 @@ public class SwitchCase {
 		}
 	};
 
-	public static Comparator<SwitchCase> CASE_INDEX_COMPARATOR = new Comparator<SwitchCase>() {
+	public static Comparator<SwitchCase> CASE_TARGET_INDEX_COMPARATOR = new Comparator<SwitchCase>() {
 		@Override public int compare(SwitchCase o1, SwitchCase o2) {
 			return o1.caseTarget - o2.caseTarget;
 		}
@@ -25,41 +25,23 @@ public class SwitchCase {
 
 	public final int caseMatch;
 	public final int caseTarget;
-	public final int caseEndIdx;
-	public final int caseEndTarget;
-	public final boolean hasEndTarget;
-	private final IntList codeFlow;
+	private final IntArrayList codeFlow;
+	public final int codeFlowMaxIndex;
 	private boolean finished;
 
-	public SwitchCase(int caseMatch, int caseTarget, int caseEndIdx, IntList codeFlow) {
+
+	public SwitchCase(int caseMatch, int caseTarget, int codeFlowMaxIndex, IntArrayList codeFlow) {
 		this.caseMatch = caseMatch;
 		this.caseTarget = caseTarget;
-		this.caseEndIdx = caseEndIdx;
-		this.caseEndTarget = 0;
-		this.hasEndTarget = false;
+		this.codeFlowMaxIndex = codeFlowMaxIndex;
 		this.codeFlow = codeFlow;
-	}
-
-
-	public SwitchCase(int caseMatch, int caseTarget, int caseEndIdx, int caseEndTarget, IntList codeFlow) {
-		this.caseMatch = caseMatch;
-		this.caseTarget = caseTarget;
-		this.caseEndIdx = caseEndIdx;
-		this.caseEndTarget = caseEndTarget;
-		this.hasEndTarget = true;
-		this.codeFlow = codeFlow;
-	}
-
-
-	public boolean contains(int idx) {
-		return idx >= caseTarget && idx <= caseEndIdx;
 	}
 
 
 	/** The {@link CodeFlow} for this switch case statement, starting from the case target, tracing all non-circular paths within the method's code
 	 * @return
 	 */
-	public IntList getCodeFlow() {
+	public IntArrayList getCodeFlow() {
 		return codeFlow;
 	}
 
@@ -76,6 +58,6 @@ public class SwitchCase {
 
 	@Override
 	public String toString() {
-		return "case " + this.caseMatch + ": [" + this.caseTarget + ", " + this.caseEndIdx + (this.hasEndTarget ? "] -> " + this.caseEndTarget : "]");
+		return "case " + this.caseMatch + ": [" + this.caseTarget + ", " + this.codeFlow + "]";
 	}
 }

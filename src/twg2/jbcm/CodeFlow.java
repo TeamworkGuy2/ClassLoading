@@ -32,6 +32,9 @@ public class CodeFlow {
 					dstPath.add(~i);
 				}
 				int jumpDst = opc.getJumpDestination(instr, i);
+				if(jumpDst < 0) {
+					jumpDst = opc.getJumpDestination(instr, i);
+				}
 				getFlowPaths(jumpDst, instr, dstPath);
 
 				// end this code path if the jump path is unconditional (i.e. GOTO or JSR)
@@ -49,6 +52,17 @@ public class CodeFlow {
 		}
 
 		return dstPath;
+	}
+
+
+	public static int maxIndex(IntListReadOnly codeFlow) {
+		int max = -1;
+		for(int i = 0, size = codeFlow.size(); i < size; i++) {
+			int index = codeFlow.get(i);
+			max = Math.max(index < 0 ? ~index : index, max);
+		}
+
+		return max;
 	}
 
 

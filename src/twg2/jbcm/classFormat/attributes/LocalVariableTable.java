@@ -11,7 +11,7 @@ import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
 import twg2.jbcm.modify.AttributeOffsetFunction;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 import twg2.jbcm.modify.OffsetAttribute;
 
 /** A Java class file format Attribute of type {@code LocalVariableTable}
@@ -79,9 +79,9 @@ public class LocalVariableTable implements Attribute_Type, OffsetAttribute {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(local_variable_table, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(local_variable_table);
 	}
 
 
@@ -193,9 +193,9 @@ public class LocalVariableTable implements Attribute_Type, OffsetAttribute {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(name_index, oldIndex, newIndex);
-			IndexUtility.indexChange(descriptor_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(name_index);
+			indexChanger.indexChange(descriptor_index);
 		}
 
 

@@ -39,7 +39,7 @@ public enum ConstantPoolTag {
 	METHOD_TYPE			((byte)16) { @Override public CONSTANT_MethodType create(ClassFile clazz) { return new CONSTANT_MethodType(clazz); } },
 	INVOKE_DYNAMIC		((byte)18) { @Override public CONSTANT_InvokeDynamic create(ClassFile clazz) { return new CONSTANT_InvokeDynamic(clazz); } };
 
-	private static ConstantPoolTag[] tagArray;
+	private static final ConstantPoolTag[] tagArray;
 
 	private byte tag;
 
@@ -91,21 +91,32 @@ public enum ConstantPoolTag {
 	}
 
 
-	/** Java class file format <code>ConstantPool</code> info type loading method
-	 * @author TeamworkGuy2
-	 * @since 2013-7-7
+	/** Java class file format <code>ConstantPool</code> item parser/loader.
+	 * Uses this enum's tag values and {@link #create(ClassFile)} methods to parse constant pool
+	 * entries from a {@link DataInput} stream.
 	 */
-	public static final CONSTANT_CP_Info loadConstantPoolObject(DataInput in, ClassFile resolver) throws IOException {
+	public static CONSTANT_CP_Info loadConstantPoolObject(DataInput in, int cpIndex, ClassFile resolver) throws IOException {
 		CONSTANT_CP_Info cpObj = null;
-		int tag = in.readByte();
+		int tag = in.readByte() & 0xFF;
 
 		try {
 			cpObj = tagArray[tag].create(resolver);
-		} catch(ArrayIndexOutOfBoundsException e) {
-			throw new IllegalArgumentException("Unkown constant pool tag: " + tag);
+		} catch(RuntimeException e) {
+			if(Settings.checkCPTag) {
+				throw new IllegalArgumentException("Unknown constant pool tag: " + tag);
+			}
+			else {
+				// all constant pool entries will have a tag followed by at least 2 bytes of data, so even if invalid, read 2 bytes
+				// https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4
+				int unknownData1 = cpObj == null ? in.readByte() : 0;
+				int unknownData2 = cpObj == null ? in.readByte() : 0;
+				System.err.println("Unknown constant pool tag: " + tag + " at index " + cpIndex + ", attempting to read required 2 byte info: [" + unknownData1 + ", " + unknownData2 + "]");
+				return null;
+			}
 		}
 
 		cpObj.readData(in);
+
 		return cpObj;
 	}
 

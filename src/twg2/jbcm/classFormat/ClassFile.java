@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import twg2.jbcm.DataCountingInputStream;
 import twg2.jbcm.classFormat.attributes.Attribute_Type;
 import twg2.jbcm.classFormat.attributes.BootstrapMethods;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
@@ -28,14 +29,15 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_MethodHandle;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_MethodType;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_String;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 import twg2.jbcm.modify.TypeUtility;
 
 /** Java class file format parent class
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
-public class ClassFile extends ConstantPoolExtensions implements Externalizable, ReadWritable {
+public class ClassFile extends ConstantPoolExtensions implements Externalizable, ReadWritable, CpIndexChangeable {
 	public static final int HEADER_BYTES = 0xCAFEBABE;
 	/** Declared public; may be accessed from outside its package. */
 	public static final short ACC_PUBLIC = 0x0001;
@@ -56,19 +58,19 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	/** Is a module, not a class or interface. */
 	public static final int ACC_MODULE = 0x8000;
 
-	int magic; // Must be: 0xCAFEBABE
-	short minor_version; // Minor 'm' version value of M.m
-	short major_version; // Major 'M' version value of M.m
+	protected int magic; // Must be: 0xCAFEBABE
+	protected short minor_version; // Minor 'm' version value of M.m
+	protected short major_version; // Major 'M' version value of M.m
 	// The value of the constant_pool_count item equals the number of entries in the constant_pool
 	// table plus one. A constant_pool index is considered valid if it is greater than zero and less
 	// than constant_pool_count, with the exception for constants of type long and double noted in §4.4.5
-	short constant_pool_count;
+	protected short constant_pool_count;
 	// The constant_pool is a table of structures (§4.4) representing various string constants, class and interface names,
 	// field names, and other constants that are referred to within the ClassFile structure and its substructures.
 	// The format of each constant_pool table entry is indicated by its first "tag" byte.
 	// constant_pool table is indexed from 1 to constant_pool_count-1, size [constant_pool_count-1], indexed from 1.
-	List<CpIndex<CONSTANT_CP_Info>> constant_pool;
-	List<List<Class<? extends CONSTANT_CP_Info>>> constantPoolExpectations;
+	protected List<CpIndex<CONSTANT_CP_Info>> constant_pool;
+	protected List<List<Class<? extends CONSTANT_CP_Info>>> constantPoolExpectations;
 	// The value of the access_flags item is a mask of flags used to denote access permissions to and properties of
 	// this class or interface. The interpretation of each flag, when set, is as shown in Table 4.1.
 	/* Flag Name 	Value 	Interpretation
@@ -82,44 +84,44 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * ACC_ENUM 	0x4000 	Declared as an enum type.
 	 * ACC_MODULE 	0x8000 	Is a module, not a class or interface. 
 	 */
-	short access_flags;
+	protected short access_flags;
 	/* Value of the this_class must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Class_info (§4.4.1) structure
 	 * representing the class or interface defined by this class file.
 	 */
-	CpIndex<CONSTANT_Class> this_class;
+	protected CpIndex<CONSTANT_Class> this_class;
 	/* For a class, the value of the super_class item either must be zero or must be a
 	 * valid index into the constant_pool table. If the value of the super_class item is nonzero,
 	 * the constant_pool entry at that index must be a CONSTANT_Class_info (§4.4.1) structure
 	 * representing the direct superclass of the class defined by this class file.
 	 * Neither the direct superclass nor any of its superclasses may be a final class.
 	 */
-	CpIndex<CONSTANT_Class> super_class;
+	protected CpIndex<CONSTANT_Class> super_class;
 	// The value of the interfaces_count item gives the number of direct superinterfaces of this class or interface type.
-	short interfaces_count;
+	protected short interfaces_count;
+	// CONSTANT_Class.class
 	/* Each value in the interfaces array must be a valid index into the constant_pool table.
 	 * The constant_pool entry at each value of interfaces[i], where -1 < i < interfaces_count,
 	 * must be a CONSTANT_Class_info (§4.4.1) structure representing an interface that is a
 	 * direct superinterface of this class or interface type, in the left-to-right order given
 	 * in the source for the type, size [interfaces_count], indexed from 0.
 	 */
-	// CONSTANT_Class.class
-	CpIndex<CONSTANT_Class>[] interfaces;
+	protected CpIndex<CONSTANT_Class>[] interfaces;
 	/* The value of the fields_count item gives the number of field_info structures in the fields table.
 	 * The field_info (§4.5) structures represent all fields, both class variables and instance
 	 * variables, declared by this class or interface type.
 	 */
-	short fields_count;
+	protected short fields_count;
 	/* Each value in the fields table must be a field_info (§4.5) structure giving a complete
 	 * description of a field in this class or interface. The fields table includes only
 	 * those fields that are declared by this class or interface. It does not include items
 	 * representing fields that are inherited from superclasses or superinterfaces,
 	 * size [fields_count], indexed from 0.
 	 */
-	Field_Info[] fields;
+	protected Field_Info[] fields;
 	/** The value of the methods_count item gives the number of method_info structures in the methods table. 
 	 */
-	short methods_count;
+	protected short methods_count;
 	/** Each value in the methods table must be a method_info (§4.6) structure giving a complete description of a method
 	 * in this class or interface. If the method is not native or abstract, the Java virtual machine instructions
 	 * implementing the method are also supplied.
@@ -128,10 +130,10 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * method (§3.9). The methods table does not include items representing methods that are inherited from superclasses
 	 * or superinterfaces, size [methods_count], indexed from 0.
 	 */
-	Method_Info[] methods;
+	protected Method_Info[] methods;
 	/** The value of the attributes_count item gives the number of attributes (§4.7) in the attributes table of this class.
 	 */
-	short attributes_count;
+	protected short attributes_count;
 	/** Each value of the attributes table must be an attribute structure (§4.7).
 	 * The only attributes defined by this specification as appearing in the attributes table of a ClassFile structure
 	 * are the SourceFile attribute (§4.7.7) and the Deprecated (§4.7.10) attribute.
@@ -140,23 +142,20 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * allowed to affect the semantics of the class file, but only to provide additional descriptive
 	 * information (§4.7.1), size [attributes_count], indexed from 0.
 	 */
-	Attribute_Type[] attributes;
+	protected Attribute_Type[] attributes;
 	/** Optional bootstrap methods reference if it exists
 	 */
-	BootstrapMethods bootstrapMethods;
+	protected BootstrapMethods bootstrapMethods;
 
 	// non class fields
 	private boolean requireJavaHeaderBytes = true;
+	private String source;
 
 
-	public ClassFile() {
-		super();
-	}
-
-
-	public ClassFile(boolean requireJavaMagicBytes) {
+	public ClassFile(boolean requireJavaMagicBytes, String source) {
 		super();
 		this.requireJavaHeaderBytes = requireJavaMagicBytes;
+		this.source = source;
 	}
 
 
@@ -236,6 +235,11 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	}
 
 
+	public String getSource() {
+		return source;
+	}
+
+
 	@Override
 	public void addConstantPoolExpectation(int index, Class<? extends CONSTANT_CP_Info> clazz) {
 		constantPoolExpectations.get(index).add(clazz);
@@ -276,17 +280,17 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(this_class, oldIndex, newIndex);
-		IndexUtility.indexChange(super_class, oldIndex, newIndex);
-		IndexUtility.indexChange(interfaces, oldIndex, newIndex);
-		for(int i = constant_pool_count-1; i > 0; i--) {
-			IndexUtility.indexChange(constant_pool.get(i), oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(this_class);
+		indexChanger.indexChange(super_class);
+		indexChanger.indexChange(interfaces);
+		for(int i = constant_pool_count - 1; i > 0; i--) {
+			indexChanger.indexChange(constant_pool.get(i));
 		}
-		IndexUtility.indexChange(fields, oldIndex, newIndex);
-		IndexUtility.indexChange(methods, oldIndex, newIndex);
-		IndexUtility.indexChange(attributes, oldIndex, newIndex);
-		IndexUtility.indexChange(bootstrapMethods, oldIndex, newIndex);
+		indexChanger.indexChange(fields);
+		indexChanger.indexChange(methods);
+		indexChanger.indexChange(attributes);
+		indexChanger.indexChange(bootstrapMethods);
 	}
 
 
@@ -298,9 +302,10 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 		setConstantPool(index2, item1);
 		// Swap the indices of all objects that refer to these two constant pool objects
 		short tempIndex = (short)(constant_pool_count + 1);
-		changeCpIndex((short)index1, tempIndex);
-		changeCpIndex((short)index2, (short)index1);
-		changeCpIndex(tempIndex, (short)index2);
+		CpIndexChanger index1ToTemp = new CpIndexChanger((short)index1, tempIndex);
+		CpIndexChanger tempToIndex2 = new CpIndexChanger(tempIndex, (short)index2);
+		changeCpIndex(index1ToTemp);
+		changeCpIndex(tempToIndex2);
 	}
 
 
@@ -389,6 +394,7 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	@SuppressWarnings("unchecked")
 	@Override
 	public void readData(DataInput in) throws IOException {
+		var incs = (DataCountingInputStream)in;
 		magic = in.readInt();
 		if(magic != HEADER_BYTES && requireJavaHeaderBytes) {
 			throw new IllegalStateException("Header bytes do not match " + HEADER_BYTES + ": " + magic);
@@ -412,7 +418,25 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 		}
 		// Constant pool starts at 1
 		for(int i = 1; i < constant_pool_count; i++) {
-			constant_pool.get(i).setCpObject( ConstantPoolTag.loadConstantPoolObject(in, this) );
+			if(Settings.debug) { System.out.println("Constant pool item #" + i + " at stream index " + incs.bytesRead()); }
+			CONSTANT_CP_Info cpItem = ConstantPoolTag.loadConstantPoolObject(in, i, this);
+			if(cpItem != null) {
+				constant_pool.get(i).setCpObject(cpItem);
+			}
+			else if(Settings.debug) {
+				System.out.println("Failed to parse constant pool item #" + i + ", now at stream index " + incs.bytesRead());
+			}
+		}
+		// if debug mode: print constant pool entries
+		if(Settings.debug) {
+			System.out.println("Constant pool finished reading, stream index @ " + incs.bytesRead());
+			for(int i = 1; i < constant_pool_count; i++) {
+				try {
+					System.out.println("CP item " + i + ": " + constant_pool.get(i));
+				} catch(Exception ex) {
+					System.err.println("Error with constant pool item " + i + ": " + ex.getMessage());
+				}
+			}
 		}
 		// validate constant pool expected types
 		if(Settings.checkCPExpectedType) {
@@ -427,7 +451,7 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 		}
 		access_flags = in.readShort();
 		this_class = this.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
-		super_class = this.getCheckCpIndex(in.readShort(), CONSTANT_Class.class);
+		super_class = this.getCheckCpIndex(in.readShort(), CONSTANT_Class.class, true);
 		interfaces_count = in.readShort();
 		interfaces = new CpIndex[interfaces_count];
 		for(int i = 0; i < interfaces_count; i++) {
@@ -451,6 +475,9 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 			attributes[i] = ClassFileAttributes.loadAttributeObject(in, this, null);
 			// Loop bootstrap methods attribute
 			if(attributes[i].getClass() == BootstrapMethods.class) {
+				if(Settings.debug && this.bootstrapMethods != null) {
+					System.out.println("duplicate bootstramp methods attributes found, overwriting prevous '" + this.bootstrapMethods + "' with '" + attributes[i] + "'");
+				}
 				this.bootstrapMethods = (BootstrapMethods)attributes[i];
 			}
 		}
@@ -562,8 +589,8 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * @return the class file loaded from the specified file
 	 * @throws IOException if the file cannot be opened or if it is not a recognized class file format
 	 */
-	public static final ClassFile load(File file) throws IOException {
-		return load(new BufferedInputStream(new FileInputStream(file)));
+	public static ClassFile load(File file) throws IOException {
+		return load(new BufferedInputStream(new FileInputStream(file)), file.toString());
 	}
 
 
@@ -572,11 +599,11 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * @return the class file loaded from the specified input stream
 	 * @throws IOException if the file cannot be opened or if it is not a recognized class file format
 	 */
-	public static final ClassFile load(InputStream input) throws IOException {
-		ClassFile classFile = new ClassFile();
+	public static ClassFile load(InputStream input, String source) throws IOException {
+		ClassFile classFile = new ClassFile(true, source);
 		DataInputStream in = null;
 		try {
-			in = new DataInputStream(input);
+			in = new DataCountingInputStream(input);
 			classFile.readData(in);
 		} finally {
 			if(in != null) {
@@ -606,9 +633,9 @@ public class ClassFile extends ConstantPoolExtensions implements Externalizable,
 	 * @throws IOException if the class' class file could not be found or opened or if the class file found
 	 * is not a recognized class file format
 	 */
-	public static final ClassFile load(Class<?> clazz, boolean requireJavaMagicBytes) throws IOException {
-		ClassFile classFile = new ClassFile(requireJavaMagicBytes);
+	public static ClassFile load(Class<?> clazz, boolean requireJavaMagicBytes) throws IOException {
 		String filesystemClassName = clazz.getCanonicalName().replace('.', '/') + ".class";
+		ClassFile classFile = new ClassFile(requireJavaMagicBytes, filesystemClassName);
 		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filesystemClassName);
 		DataInputStream in = null;
 		try {

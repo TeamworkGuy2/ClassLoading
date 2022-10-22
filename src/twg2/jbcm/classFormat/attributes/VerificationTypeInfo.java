@@ -8,13 +8,14 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>VerificationTypeInfo</code> for a {@link StackMapTable.StackMapFrame}
  * @author TeamworkGuy2
  * @since 2013-10-6
  */
-public class VerificationTypeInfo implements ReadWritable {
+public class VerificationTypeInfo implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The verification type info:
 	 * 0 = TOP
@@ -67,9 +68,9 @@ public class VerificationTypeInfo implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
+	public void changeCpIndex(CpIndexChanger indexChanger) {
 		if(tag == 7) {
-			IndexUtility.indexChange(cpool_index, oldIndex, newIndex);
+			indexChanger.indexChange(cpool_index);
 		}
 	}
 

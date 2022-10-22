@@ -24,7 +24,7 @@ Also see [extract-opcodes.js](extract-opcodes.js) file for how the enum literals
 ### twg2.jbcm.dynamicModification & twg2.jbcm.parserExamples
 Classes used by the example and test packages.
 
-### twg2.jbcm.runtimeLoading
+### twg2.jbcm.runtime
 Runtime class loading.
 
 ### twg2.jbcm.main

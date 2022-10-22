@@ -17,7 +17,7 @@ public class SourceWriter {
 
 
 	public SourceWriter(String indentMark, String newln) {
-		this.indent = new Indent(indentMark);
+		this.indent = new Indent.Impl(indentMark);
 		this.newln = newln;
 		this.src = new StringBuilder();
 	}
@@ -137,7 +137,7 @@ public class SourceWriter {
 
 
 	public SourceWriter writeClassCode(ClassFile cls, Method_Info method, MethodStack methodStack) {
-		method.getCode().toClassString(this.getIndent().getIndent(), this.src);
+		method.getCode().toClassCodeString(this.getIndent().getIndent(), this.src);
 		return this;
 	}
 
@@ -227,7 +227,7 @@ public class SourceWriter {
 			sb.append("transient ");
  		}
 
-		return sb.substring(0, sb.length() - 1);
+		return sb.substring(0, sb.length() > 0 ? sb.length() - 1 : 0);
 	}
 
 

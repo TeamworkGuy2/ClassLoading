@@ -9,7 +9,7 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.attributes.BootstrapMethods;
 import twg2.jbcm.classFormat.attributes.BootstrapMethods.BootstrapMethod;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format constant pool <code>InvokeDynamic reference</code> info type.<br>
  * Constant value = 18, class version = 51.0, Java SE = 7
@@ -43,8 +43,8 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(name_and_type_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(name_and_type_index);
 	}
 
 
@@ -97,8 +97,11 @@ public class CONSTANT_InvokeDynamic implements CONSTANT_CP_Info {
 	public String toString() {
 		BootstrapMethods bootstrapMethod = ((BootstrapMethods)resolver.getBootstrapMethods());
 		CONSTANT_NameAndType method = name_and_type_index.getCpObject();
+		// null checks for malformed classes, for example, when a constant pool item references another item ahead of
+		// it in the constant pool that hasn't been parsed yet
 		return "InvokeDynamic(18, invoke_dynamic=" + bootstrapMethod.getBootstrapMethod(bootstrap_method_attr_index) +
-				", name=" + method.getName() + ", type=" + method.getDescriptor() + ")";
+				", name=" + (method != null ? method.getName() : name_and_type_index) +
+				", type=" + (method != null ? method.getDescriptor() : null) + ")";
 	}
 
 }

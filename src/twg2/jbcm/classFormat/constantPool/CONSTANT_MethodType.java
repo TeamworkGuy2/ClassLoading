@@ -7,7 +7,7 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format constant pool <code>MethodType reference</code> info type.<br>
  * Constant value = 16, class version = 51.0, Java SE = 7
@@ -37,8 +37,8 @@ public class CONSTANT_MethodType implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(descriptor_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(descriptor_index);
 	}
 
 

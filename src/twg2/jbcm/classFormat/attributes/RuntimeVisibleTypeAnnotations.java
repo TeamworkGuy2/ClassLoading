@@ -9,7 +9,7 @@ import twg2.jbcm.classFormat.ClassFileAttributes;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>RuntimeVisibleTypeAnnotations</code>
  * @author TeamworkGuy2
@@ -55,9 +55,9 @@ public class RuntimeVisibleTypeAnnotations implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(annotations, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(annotations);
 	}
 
 

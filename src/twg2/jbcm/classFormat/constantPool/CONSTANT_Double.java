@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Settings;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format constant pool <code>Double</code> info type.<br>
  * Constant value = 6, class version = 45.3, Java SE = 1.0.2
@@ -47,7 +48,7 @@ public class CONSTANT_Double implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
+	public void changeCpIndex(CpIndexChanger indexChanger) {
 	}
 
 

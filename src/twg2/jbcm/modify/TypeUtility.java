@@ -137,20 +137,6 @@ public class TypeUtility {
 	}
 
 
-	/** Return the internal binary class name of the specified class. 
-	 * For example, the normal binary name of class Thread is {@code java.lang.Thread}.
-	 * In the internal form used in descriptors in the class file format, a
-	 * reference to the name of class Thread is implemented using a CONSTANT_Utf8_info
-	 * structure representing the string {@code java/lang/Thread} (§4.2.1).
-	 * @param clas the class to get the internal formatted name of
-	 * @return the internal binary name of the specified class
-	 * @see #classToFieldDescriptor(Class)
-	 */
-	public static String classNameInternal(Class<?> clas) {
-		return classNameFieldDescriptor(clas.getName());
-	}
-
-
 	public static String methodDescriptor(CONSTANT_NameAndType method) {
 		StringBuilder dst = new StringBuilder();
 		methodDescriptor(method, dst);
@@ -198,6 +184,52 @@ public class TypeUtility {
 	}
 
 
+	/** Converts a class name separated by periods (i.e. {@code java.lang.String})
+	 * to an internal binary class name (i.e. {@code java/lang/String}).
+	 * @param className the standard class name to convert
+	 * @return the internal binary class name of the specified class name
+	 */
+	private static String toBinaryClassName(String className) {
+		return className.replace('.', '/');
+	}
+
+
+	/** Exactly the same as {@link #toBinaryClassName(String)}
+	 * except that the resulting string is appended to the specified string builder
+	 * @param className the standard class name to convert
+	 * @param dst the string builder to append the resulting internal binary class name to
+	 * @see #toBinaryClassName(String)
+	 */
+	private static void toBinaryClassName(String className, StringBuilder dst) {
+		int pos = dst.length();
+		dst.append(className);
+		int index = dst.indexOf(".", pos);
+		while(index > -1) {
+			dst.setCharAt(index, '/');
+			index = dst.indexOf(".", index + 1);
+		}
+	}
+
+
+	/** Return the internal binary class name of the specified class. 
+	 * For example, the normal binary name of class Thread is {@code java.lang.Thread}.
+	 * In the internal form used in descriptors in the class file format, a
+	 * reference to the name of class Thread is implemented using a CONSTANT_Utf8_info
+	 * structure representing the string {@code java/lang/Thread} (§4.2.1).
+	 * @param clas the class to get the internal formatted name of
+	 * @return the internal binary name of the specified class
+	 * @see #classToFieldDescriptor(Class)
+	 */
+	public static String classNameInternal(Class<?> clas) {
+		return toBinaryClassName(clas.getName());
+	}
+
+
+	public static String decodeBinaryClassName(CONSTANT_Class classRef) {
+		return classRef.getName().getString().replace('/', '.');
+	}
+
+
 	/** Convert a class to a field descriptor. For example a byte is 'B',
 	 * an int is 'I', a String is 'Ljava/lang/String;' (§4.3).
 	 * @param clas the class name to convert to a field descriptor
@@ -216,19 +248,8 @@ public class TypeUtility {
 		else if(clas == Void.TYPE) { return "V"; }
 		else if(clas.isArray()) { return '[' + classToFieldDescriptor(clas.getComponentType()); }
 		else {
-			return 'L' + classNameFieldDescriptor(clas.getName()) + ';';
+			return 'L' + toBinaryClassName(clas.getName()) + ';';
 		}
-	}
-
-
-	/** Converts a class name retrieved by calling {@code class.getName()}
-	 * to an internal binary class name, for example the internal binary name
-	 * of {@code java.lang.String} is {@code java/lang/String}.
-	 * @param className the standard class name to convert
-	 * @return the internal binary class name of the specified class name
-	 */
-	private static String classNameFieldDescriptor(String className) {
-		return className.replace('.', '/');
 	}
 
 
@@ -254,27 +275,10 @@ public class TypeUtility {
 		}
 		else {
 			dst.append('L');
-			classNameFieldDescriptor(clas.getName(), dst);
+			toBinaryClassName(clas.getName(), dst);
 			dst.append(';');
 		}
 		return dst;
-	}
-
-
-	/** Exactly the same as {@link #classNameToFieldDescriptor(String)}
-	 * except that the resulting string is appended to the specified string builder
-	 * @param className the standard class name to convert
-	 * @param dst the string builder to append the resulting internal binary class name to
-	 * @see #classNameToFieldDescriptor(String)
-	 */
-	private static void classNameFieldDescriptor(String className, StringBuilder dst) {
-		int pos = dst.length();
-		dst.append(className);
-		int index = dst.indexOf(".", pos);
-		while(index > -1) {
-			dst.setCharAt(index, '/');
-			index = dst.indexOf(".", index + 1);
-		}
 	}
 
 

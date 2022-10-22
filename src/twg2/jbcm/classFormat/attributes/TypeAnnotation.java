@@ -8,13 +8,14 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /**
  * @author TeamworkGuy2
  * @since 2014-3-19
  */
-public class TypeAnnotation implements ReadWritable {
+public class TypeAnnotation implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The value of the target_type item denotes the kind of target on which the annotation appears.
 	 * The various kinds of target correspond to the type contexts of the Java programming language
@@ -98,11 +99,11 @@ public class TypeAnnotation implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(target_info, oldIndex, newIndex);
-		IndexUtility.indexChange(target_path, oldIndex, newIndex);
-		IndexUtility.indexChange(type_index, oldIndex, newIndex);
-		IndexUtility.indexChange(element_value_pairs, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(target_info);
+		indexChanger.indexChange(target_path);
+		indexChanger.indexChange(type_index);
+		indexChanger.indexChange(element_value_pairs);
 	}
 
 
@@ -217,14 +218,14 @@ public class TypeAnnotation implements ReadWritable {
 	 * @author TeamworkGuy2
 	 * @since 2014-3-19
 	 */
-	public static class Type_Path implements ReadWritable {
+	public static class Type_Path implements ReadWritable, CpIndexChangeable {
 		byte table_length;
 		Type_Path_Table_Entry[] table;
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(table, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(table);
 		}
 
 		@Override
@@ -337,7 +338,7 @@ public class TypeAnnotation implements ReadWritable {
 	 * @author TeamworkGuy2
 	 * @since 2014-3-19
 	 */
-	public static class Type_Path_Table_Entry implements ReadWritable {
+	public static class Type_Path_Table_Entry implements ReadWritable, CpIndexChangeable {
 		byte type_path_kind;
 		byte type_argument_index;
 
@@ -353,7 +354,7 @@ public class TypeAnnotation implements ReadWritable {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 

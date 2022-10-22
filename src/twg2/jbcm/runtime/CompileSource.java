@@ -1,4 +1,4 @@
-package twg2.jbcm.runtimeLoading;
+package twg2.jbcm.runtime;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -17,14 +16,34 @@ import java.util.logging.Level;
 import org.eclipse.jdt.core.compiler.CompilationProgress;
 
 import twg2.jbcm.classFormat.ClassFile;
-import twg2.jbcm.main.RuntimeReloadMain;
 
 /** Compile a Java source file
  * @author TeamworkGuy2
  * @since 2013-10-7
  */
 public class CompileSource {
+	/** Default class name for dynamically compiled snippets of code */
 	public static String defaultCompileClassName = "CompilerTemp";
+	/** Compiler configuration for Java 1.8 source and target */
+	public static CompilerConfig JAVA_1_8_COMPILE = new CompilerConfig("\"C:/Program Files/Java/jdk1.8.0_25/bin/javac\"", "1.8", "1.8");
+	/** Whether to print code by default when calling {@code compileCode()} without the last boolean parameter */
+	public static boolean printCode = false;
+	/** Whether to print additional debug diagnostic information */
+	public static boolean debug = false;
+
+
+	public static class CompilerConfig {
+		public final String compilerPath;
+		public final String sourceVersion;
+		public final String targetCompileVersion;
+
+		public CompilerConfig(String compilerPath, String sourceVersion, String targetCompileVersion) {
+			this.compilerPath = compilerPath;
+			this.sourceVersion = sourceVersion;
+			this.targetCompileVersion = targetCompileVersion;
+		}
+	}
+
 
 	private CompileSource() {
 	}
@@ -34,68 +53,88 @@ public class CompileSource {
 	 * TODO: make JDK path/version a variable in future.
 	 * @param useEclipse whether to compile using {@link org.eclipse.jdt.core.compiler.batch.BatchCompiler}
 	 * @param entrySourceFile the source file to compile
-	 * @param sourceFilesPath the directory containing all source files required for compiling {@code entrySourceFile}
-	 * @param classPaths 'classpath' semicolon separated list of for JDK/JRE and dependency libraries
-	 * @param destinationPath the directory to write compiled {@code .class} files to
+	 * @param sourceDir the directory containing all source files required for compiling {@code entrySourceFile}
+	 * @param classPaths 'classpath' semicolon separated list of JDK/JRE and dependency libraries
+	 * @param destinationDir the directory to write compiled {@code .class} files to
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	public static boolean compile(boolean useEclipse, File entrySourceFile, File sourceFilesPath, String classPaths, File destinationPath) throws ClassNotFoundException, IOException {
-		Charset charset = Charset.forName("UTF-8");
-		String sourceFilesPathStr = sourceFilesPath.getAbsoluteFile().getPath();
-		String dstPathStr = destinationPath.getAbsoluteFile().getPath();
-		String clArg = (useEclipse ? "-1.6" : "-source 1.8 -target 1.8") +
+	public static boolean compile(CompilerConfig config, File entrySourceFile, File sourceDir, String classPaths, File destinationDir) throws ClassNotFoundException, IOException {
+		String sourceFilesPathStr = sourceDir.getAbsoluteFile().getPath();
+		String dstPathStr = destinationDir.getAbsoluteFile().getPath();
+		String clArg = "-source " + config.sourceVersion + " -target " + config.targetCompileVersion +
 				" -classpath rt.jar;" + classPaths +
 				" -sourcepath " + sourceFilesPathStr +
 				" -d " + dstPathStr +
-				" " + entrySourceFile.getAbsolutePath();
+				" " + (entrySourceFile != null ? entrySourceFile.getAbsolutePath() : "");
 
-		System.out.println("Compiler args: " + clArg);
-
-		if(useEclipse) {
-			// http://help.eclipse.org/indigo/index.jsp?topic=%2Forg.eclipse.jdt.doc.user%2Ftasks%2Ftask-using_batch_compiler.htm
-			CompilationProgress compileProgress = new CompilationProgressImpl();
-			ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
-			PrintWriter outWriter = new PrintWriter(new OutputStreamWriter(out, charset));
-			PrintWriter errWriter = new PrintWriter(System.err);
-			boolean res = org.eclipse.jdt.core.compiler.batch.BatchCompiler.compile(clArg, outWriter, errWriter, compileProgress);
-
-			System.out.println(out.toString(charset));
-			return res;
+		if(debug) {
+			System.out.println("Compiler args: " + clArg);
 		}
-		else {
-			int res = runCommand(Runtime.getRuntime(), "\"C:/Program Files/Java/jdk1.8.0_25/bin/javac\" " + clArg, System.out, System.err);
-			return res == 0;
-		}
+
+		int res = runCommand(Runtime.getRuntime(), config.compilerPath + " " + clArg, System.out, System.err);
+		return res == 0;
 	}
 
 
+	public static boolean compileUsingEclipseEcj(File entrySourceFile, File sourceDir, String classPaths, File destinationDir) throws ClassNotFoundException, IOException {
+		String sourceFilesPathStr = sourceDir.getAbsoluteFile().getPath();
+		String dstPathStr = destinationDir.getAbsoluteFile().getPath();
+		String clArg = "-1.6" +
+				" -classpath rt.jar;" + classPaths +
+				" -sourcepath " + sourceFilesPathStr +
+				" -d " + dstPathStr +
+				" " + (entrySourceFile != null ? entrySourceFile.getAbsolutePath() : "");
+
+		if(debug) {
+			System.out.println("Compiler args: " + clArg);
+		}
+
+		// http://help.eclipse.org/indigo/index.jsp?topic=%2Forg.eclipse.jdt.doc.user%2Ftasks%2Ftask-using_batch_compiler.htm
+		Charset charset = Charset.forName("UTF-8");
+		CompilationProgress compileProgress = new CompilationProgressImpl();
+		ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
+		PrintWriter outWriter = new PrintWriter(new OutputStreamWriter(out, charset));
+		PrintWriter errWriter = new PrintWriter(System.err);
+		boolean res = org.eclipse.jdt.core.compiler.batch.BatchCompiler.compile(clArg, outWriter, errWriter, compileProgress);
+
+		System.out.println(out.toString(charset));
+		return res;
+	}
+
 
 	/** Compile a Java source string to bytecode
+	 * @param sourceRootDir the root folder containing the source files
+	 * @param destinationRootDir the root folder to write compiled class files into
+	 * @param packageDir the relative package directory within the source directory the find the file and
+	 * within the destination directory to write the compiled class file. Expected format for.
+	 * Example: when compiling {@code com.app.utils.MathUtils}, the {@code packageDir} should be {@code com/app/utils} 
+	 * @param className the simple class name of the {@code javaSrc}, does not include the package name nor file extension.
+	 * Example: when compiling {@code com.app.utils.MathUtils}, the {@code className} should be {@code MathUtils}
 	 * @param javaSrc the Java source code string
 	 * @return the compiled byte code loaded as a byte[] (which can be loaded to {@link ClassFile} via {@link ClassFile#readData(java.io.DataInput)}
-	 * @throws MalformedURLException
-	 * @throws ClassNotFoundException
+	 * @throws RuntimeException wrapping possible {@link IOException} or {@link ClassNotFoundException}
 	 */
-	public static byte[] compileSourceToBytecode(String javaSrc) {
+	public static byte[] compileSourceToBytecode(String sourceRootDir, String destinationRootDir, String packageDir, String className, String javaSrc) {
 		File tmpSrcFile = null;
 		File tmpDstFile = null;
 		try {
-			new File("res/tmp/src").mkdir();
-			new File("res/tmp/bin").mkdir();
+			File srcDir = new File(sourceRootDir);
+			File dstDir = new File(destinationRootDir);
 
-			tmpSrcFile = new File("res/tmp/src/" + defaultCompileClassName + ".java");
-			Files.write(tmpSrcFile.toPath(), javaSrc.getBytes("UTF-8"), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-			File sourceFilesPath = new File("res/tmp/src");
-			String classPath = new File("res/tmp/src").getAbsolutePath();
-			File destinationPath = new File("res/tmp/bin");
+			new File(srcDir, packageDir).mkdir();
+			dstDir.mkdir();
 
-			boolean success = CompileSource.compile(false, tmpSrcFile, sourceFilesPath, classPath, destinationPath);
+			tmpSrcFile = new File(sourceRootDir + "/" + (packageDir != null && packageDir.length() > 0 ? packageDir + "/" : "") + className + ".java");
+			Files.write(tmpSrcFile.toPath(), javaSrc.getBytes("UTF-8"), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+			String classPath = srcDir.getAbsolutePath();
+
+			boolean success = compile(JAVA_1_8_COMPILE, tmpSrcFile, srcDir, classPath, dstDir);
 			if(!success) {
 				throw new RuntimeException("Error compiling source");
 			}
 
-			tmpDstFile = new File("res/tmp/bin/" + defaultCompileClassName + ".class");
+			tmpDstFile = new File(destinationRootDir + "/" + (packageDir != null && packageDir.length() > 0 ? packageDir + "/" : "") + className + ".class");
 			var bytecode = Files.readAllBytes(tmpDstFile.toPath());
 
 			tmpSrcFile.delete();
@@ -122,29 +161,7 @@ public class CompileSource {
 	}
 
 
-	/** Compile a Java source file and load it
-	 * @param srcJavaFile
-	 * @param dstClassFile
-	 * @throws ClassNotFoundException
-	 * @throws IOException 
-	 */
-	public static void compileSourceFileToClass(File srcJavaFile, File dstClassFile) throws ClassNotFoundException, IOException {
-		File entryFile = new File("res/tmp/src/twg2/compileTest/Hello.java");
-		File sourceFilesPath = new File("res/tmp/src");
-		String classPath = new File("res/tmp/src/twg2/compileTest").getAbsolutePath();
-		File destinationClassPath = new File("res/tmp/bin");
-
-		CompileSource.compile(false, entryFile, sourceFilesPath, classPath, destinationClassPath);
-
-		RuntimeReloadMain reload = new RuntimeReloadMain();
-		reload.loadRun("res/tmp/bin", "twg2.compileTest.Hello", "run", (String[])null);
-
-		//Runnable thing = (Runnable)classes[0].newInstance();
-		//thing.run();
-	}
-
-
-	private static int runCommand(Runtime runtime, String command, OutputStream outStream, OutputStream errStream) throws IOException {
+	protected static int runCommand(Runtime runtime, String command, OutputStream outStream, OutputStream errStream) throws IOException {
 		Level level = Level.INFO;
 		PrintStream log = System.err;
 
@@ -165,7 +182,7 @@ public class CompileSource {
 	 * @param exeCmd the command to execute
 	 * @return 0 normally indicates success, other values normally indicate failure
 	 */
-	private static int finishSync(Process process, ReadInputStream inputReader, ReadInputStream errorReader) {
+	protected static int finishSync(Process process, ReadInputStream inputReader, ReadInputStream errorReader) {
 		int res = -1;
 		try {
 			res = process.waitFor();
@@ -183,7 +200,7 @@ public class CompileSource {
 
 
 
-	private static class CompilationProgressImpl extends CompilationProgress {
+	protected static class CompilationProgressImpl extends CompilationProgress {
 		//private boolean done;
 
 		@Override

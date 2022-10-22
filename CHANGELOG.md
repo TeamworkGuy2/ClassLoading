@@ -2,9 +2,30 @@
 All notable changes to this project will be documented in this file.
 This project does its best to adhere to [Semantic Versioning](http://semver.org/).
 
+--------
+### [0.6.0](N/A) - 2022-10-22
+__Add loop and if-statements detection to decompilation, also handle basic try-catch and synchronized blocks.__
+#### Added
+* `StringBuilderIndent` provides the same API as `StringBuilder` (unfortunately we can't extend StringBuilder because it is final) and implements `Indent` so that this class can be used to easily build source code strings
+* `src/twg2/jbcm/toSource/structures` with state handlers for inserting more complex structures such as loops and try-catch statements into source code during opcode iteration
+
+#### Changed
+* `twg2.jbcm.classFormat.attributes.Code` `toClassString()` renamed `toClassCodeString()`
+* `CpIndexChanger` is now stateful and contains the old and new index and uses a proper visitor pattern to handle changing indexes
+* `Indent` changed from a class to an interface with a public static `Impl` subclass
+* `IterateCode` renamed `CodeIterator`
+* `RuntimeReloadMain` refactored, more complex threaded loading and invocation of methods from updated class files, some code moved to new classes `twg2.jbcm.runtime.ClassLoaders` and `FileUtility`
+* `twg2.jbcm.runtimeLoading` package renamed `twg2.jbcm.runtime`
+* `CodeFlow` contains algorithms for detecting loops and if-statements in byte code
+* `DataCountingInputStream` added and used in `ClassFile` when parsing a class to improve debug and error message with exact byte index locations
+* Several new unit/integration tests added, `CompileTest` renamed `CompileJava`
+* Fixed compiling code during runtime to support class names with arbitrary package paths, required extensive changes to `CompileSource`
+* `JumpConditionInfo` rewritten to support representing loop and nested if-statement conditions
+* `TypeUtility.classNameFieldDescriptor()` renamed `toBinaryClassName()`
+
 
 --------
-### [0.5.1](N/A) - 2020-12-05
+### [0.5.1](https://github.com/TeamworkGuy2/ClassLoading/commit/3653372d7564f749135a7db119a70f77df8b1696) - 2020-12-05
 __Fix `switch` statements to decompile much more accurately based on code flow analysis. Start work on `if` statements.__
 #### Added
 * new `Indent` class to handle `SourceWriter` indentation

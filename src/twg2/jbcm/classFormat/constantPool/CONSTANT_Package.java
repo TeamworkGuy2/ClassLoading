@@ -7,7 +7,7 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format constant pool <code>Package</code> info type.<br>
  * Constant value = 20, class version = 53.0, Java SE = 9<br>
@@ -40,8 +40,8 @@ public class CONSTANT_Package implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(name_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(name_index);
 	}
 
 
@@ -81,7 +81,9 @@ public class CONSTANT_Package implements CONSTANT_CP_Info {
 	@Override
 	public String toString() {
 		CONSTANT_Utf8 name = name_index.getCpObject();
-		return "Package(19, name=" + name.getString() + ")";
+		// null checks for malformed classes, for example, when a constant pool item references another item ahead of
+		// it in the constant pool that hasn't been parsed yet
+		return "Package(19, name=" + (name != null ? name.getString() : name_index) + ")";
 	}
 
 }

@@ -6,13 +6,14 @@ import java.io.IOException;
 
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.ReadWritable;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Annotation subtype of type <code>Parameter_Annotation</code>
  * @author TeamworkGuy2
  * @since 2013-12-3
  */
-public class Parameter_Annotations implements ReadWritable {
+public class Parameter_Annotations implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The value of the num_annotations item indicates the number of run-time-invisible annotations
 	 * on the parameter corresponding to the sequence number of this parameter_annotations element.
@@ -30,8 +31,8 @@ public class Parameter_Annotations implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(annotations, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(annotations);
 	}
 
 

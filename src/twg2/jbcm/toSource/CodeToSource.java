@@ -1,10 +1,10 @@
 package twg2.jbcm.toSource;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 import twg2.collections.primitiveCollections.IntArrayList;
+import twg2.jbcm.CodeFlow;
 import twg2.jbcm.Opcodes;
 import twg2.jbcm.Opcodes.Type;
 import twg2.jbcm.classFormat.ClassFile;
@@ -21,14 +21,20 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_MethodHandle;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_MethodType;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Methodref;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_String;
-import twg2.jbcm.ir.JumpConditionInfo;
 import twg2.jbcm.ir.MethodStack;
 import twg2.jbcm.ir.OperandInfo;
-import twg2.jbcm.ir.Switch;
 import twg2.jbcm.ir.VariableInfo;
 import twg2.jbcm.modify.TypeUtility;
+import twg2.jbcm.toSource.structures.CodeStructureIf;
+import twg2.jbcm.toSource.structures.CodeStructureLoop;
+import twg2.jbcm.toSource.structures.CodeEmitter;
+import twg2.jbcm.toSource.structures.CodeStructureSwitch;
+import twg2.jbcm.toSource.structures.CodeStructureSynchronized;
+import twg2.jbcm.toSource.structures.CodeStructureTryCatchFinally;
 
 import static twg2.jbcm.CodeUtility.loadOperands;
+import static twg2.jbcm.modify.TypeUtility.decodeBinaryClassName;
+import static twg2.jbcm.toSource.structures.CodeEmitter.runEmits;
 
 /**
  * @author TeamworkGuy2
@@ -47,114 +53,47 @@ public class CodeToSource {
 		Code code = method.getCode();
 		byte[] instr = code.getCode();
 		int instrCount = instr.length;
-		//BitSet instrUsed = new BitSet(instr.length); // track which instructions have already run through the loop
+		int i = 0;
+		int endIdx = instrCount - 1;
 
-		var loops = new ArrayList<JumpConditionInfo>(); // track GOTO/IF_* loops detected in the code
-		// pairs of values, the first is the case match value the second is the target index
-		Switch curSwitch = null;
-		int conditionUnfinishedIdx = -1;
-		Indent indent = dst.getIndent();
+		var possibleLoops = CodeFlow.findFlowConditions(instr, i, endIdx); // track GOTO/IF_* loops detected in the code
+		var structuresInProgress = new ArrayList<CodeEmitter>();
+
+		var exception_table = code.getExceptionTable();
+		for(int j = 0; j < exception_table.length; j++) {
+			var tryCatchStructure = CodeStructureTryCatchFinally.create(instr, exception_table[j], "ex" + (j + 1), methodStack);
+			if(tryCatchStructure != null) {
+				structuresInProgress.add(tryCatchStructure);
+			}
+		}
+
 		StringBuilder tmp = new StringBuilder();
 		var tmpList = new ArrayList<String>();
 		var tmpList2 = new ArrayList<String>();
-		StringBuilder str = dst.src;
+		var src = new StringBuilderIndent(dst.src, dst.getIndent());
 
-		str.append(" // stack: ").append(code.getMaxStack())
-			.append(", locals: ").append(code.getMaxLocals()).append("\n");
+		src.append("// stack: ").append(code.getMaxStack())
+			.append(", locals: ").append(code.getMaxLocals()).append('\n');
 
-		var instrFlows = new ArrayList<IntArrayList>(); // pairs of index start (inclusive) and end (inclusive) indexes to control which portions of the code are processed by the main loop
+		var instrFlows = new ArrayList<IntArrayList>(); // pairs of start (inclusive) and end (inclusive) indexes to control which portions of the code are processed by the main loop
 		instrFlows.add(new IntArrayList());
-		int i = 0;
-		int endIdx = instrCount - 1;
 
 		for( ; i <= endIdx; i++) {
 			Opcodes opc = Opcodes.get(instr[i] & 0xFF);
 			int numOperands = opc.getOperandCount();
-			boolean isWide = false;
 			// read following bytes of code and convert them to an operand
 			int operand = loadOperands(numOperands, instr, i);
-
-			// skip instructions that have already been processed (since code flow can be non-linear with branches, loops, and switches
-			//if(instrUsed.get(i)) {
-			//	i += (numOperands < 0 ? 0 : numOperands);
-			//	continue;
-			//}
-
-			//instrUsed.set(i);
-
-			// end if-else blocks and loops based on ending instruction index tracked when if_* and goto instructions are first encountered
-			var curCond = conditionUnfinishedIdx > -1 ? loops.get(conditionUnfinishedIdx) : null;
-			while(curCond != null && curCond.getTargetIndex() <= i) {
-				// if-statement (loops start with GOTO, handled elsewhere)
-				if(curCond.getOpcode() != Opcodes.GOTO && !curCond.isFinished()) {
-					curCond.finish();
-					indent.dedent();
-					str.append(indent).append('}').append('\n');
-				}
-				conditionUnfinishedIdx--;
-				curCond = conditionUnfinishedIdx > -1 ? loops.get(conditionUnfinishedIdx) : null;
-			}
-
-			// switch cases
-			if(curSwitch != null) {
-				if(curSwitch.switchDefault.caseTarget == i) {
-					curSwitch.finish(curSwitch.switchDefault);
-					str.append("default: ").append("// offset ").append(curSwitch.switchDefault.caseTarget);
-				}
-				var switchCaseIdx = SwitchFlow.findSwitchCase(i, curSwitch.switchCases, 0);
-				while(switchCaseIdx > -1) {
-					var caseObj = curSwitch.switchCases.get(switchCaseIdx);
-					caseObj.finish();
-					str.append(indent.toDedent()).append("case ").append(caseObj.caseMatch).append(": ").append("// offset ").append(caseObj.caseTarget).append('\n');
-					switchCaseIdx = SwitchFlow.findSwitchCase(i, curSwitch.switchCases, switchCaseIdx + 1);
-				}
-			}
-
-			str.append(indent).append(isWide ? "WIDE " : "");
 
 			// unpredictable operand length instructions
 			if(opc == Opcodes.WIDE) {
 				// TODO need to read extra wide operand bytes in all possible cases
-				isWide = true;
 				i++; // because wide instructions are wrapped around other instructions
 				opc = Opcodes.get(instr[i] & 0xFF);
 				numOperands = opc.getOperandCount();
-				//instrUsed.set(i);
 			}
 			// switch
 			else if(numOperands == Opcodes.Const.UNPREDICTABLE) {
-				if(opc == Opcodes.TABLESWITCH) {
-					curSwitch = Switch.loadTableSwitch(i, instr);
-				}
-				else if(opc == Opcodes.LOOKUPSWITCH) {
-					curSwitch = Switch.loadLookupSwitch(i, instr);
-				}
-				int origI = i;
-				i += curSwitch.switchInstSize;
-				//instrUsed.set(origI, i);
-				var switchKey = methodStack.popOperand();
-				indent.indent();
-				str.append("switch(" + switchKey.getExpression() + ") {");
-
-				//var instrFlow = last(instrFlows);
-				//instrFlow.add(curSwitch.switchEndIdx > -1 ? ~curSwitch.switchEndIdx : ~i); // TODO technically we wouldn't want to restart at the current index
-				// need some unit tests to check different types of switches
-				// can a switch with fall through cases still have a common end index, 'break' instructions should lead to a common end index, what if the default throws, etc?
-				//instrFlow.add(endIdx);
-
-				//SwitchFlow.loadCasesToFlow(curSwitch.switchCases, curSwitch.switchDefault, instrFlows);
-
-				// TODO debugging
-				//str.append(" // common end: " + commonEndIdx);
-				//for(var caseObj : switchCases) {
-				//	str.append('\n').append(indentation).append(indentMark).append("// case " + caseObj.caseMatch + ": [" + caseObj.caseTarget + ", " + caseObj.caseEndIdx + "]" + (caseObj.caseEndTarget > 0 ? " jump to " + caseObj.caseEndTarget : ""));
-				//	System.out.println("case " + caseObj.caseMatch + ": " + CodeFlow.flowPathToString(instr, caseObj.getCodeFlow()));
-				//}
-				//str.append('\n').append(indentation).append(indentMark).append("// default: [" + switchDefault.get().caseTarget + ", " + switchDefault.get().caseEndIdx + "]" + (switchDefault.get().caseEndTarget > 0 ? " jump to " + switchDefault.get().caseEndTarget : ""));
-
-				//if(curSwitch.switchEndIdx == -1) {
-				//	throw new IllegalStateException(opc + " switch statement common end index could not be found, cannot decompile");
-				//}
+				structuresInProgress.add(CodeStructureSwitch.create(opc, instr, i, methodStack.popOperand(), src));
 			}
 
 			if(opc.hasBehavior(Type.CONST_LOAD)) {
@@ -194,6 +133,7 @@ public class CodeToSource {
 				}
 				methodStack.addOperand(new OperandInfo(expr, exprType, opc));
 			}
+			// includes: ILOAD*, LLOAD*, FLOAD*, DLOAD*, ALOAD*
 			else if(opc.hasBehavior(Type.VAR_LOAD)) {
 				int localVarIdx = numOperands > 0 ? loadOperands(numOperands, instr, i) : ((Number)opc.getConstantValue()).intValue();
 				var value = methodStack.getVariable(localVarIdx);
@@ -205,15 +145,20 @@ public class CodeToSource {
 				String componentType = TypeUtility.arrayComponentType(arrayref.getExpressionFullType());
 				methodStack.addOperand(new OperandInfo(arrayref.getExpression() + '[' + index.getExpression() + ']', componentType, opc));
 			}
+			// includes: ISTORE*, LSTORE*, FSTORE*, DSTORE*, ASTORE*
 			else if(opc.hasBehavior(Type.VAR_STORE)) {
 				int localVarIdx = numOperands > 0 ? loadOperands(numOperands, instr, i) : ((Number)opc.getConstantValue()).intValue();
-				setVariable(methodStack, localVarIdx, methodStack.popOperand(), method, str);
+				try {
+					setVariable(methodStack, localVarIdx, methodStack.popOperand(), method, src);
+				} catch(Exception ex) {
+					throw ex;
+				}
 			}
 			else if(opc.hasBehavior(Type.ARRAY_STORE)) {
 				var value = methodStack.popOperand();
 				var index = methodStack.popOperand();
 				var arrayref = methodStack.popOperand();
-				str.append(arrayref.getExpression()).append('[').append(index.getExpression()).append(']').append(" = ").append(value.getExpression()).append(';');
+				src.appendIndent().append(arrayref.getExpression()).append('[').append(index.getExpression()).append(']').append(" = ").append(value.getExpression()).append(';').append('\n');
 			}
 			else if(opc == Opcodes.POP) {
 				methodStack.popOperand();
@@ -225,7 +170,6 @@ public class CodeToSource {
 			else if(opc.hasBehavior(Type.STACK_MANIPULATE)) {
 				// TODO DUP instructions are referenced multiple times, so if the current expression is compound it needs to become a new temp variable
 				if(opc == Opcodes.DUP) {
-					// TODO Correct ??? DUP     (89, 0, enums(Type.STACK_MANIPULATE), null), // Duplicate the top operand stack value
 					var op = methodStack.popOperand();
 					var opCopy = op.copy();
 					methodStack.addOperand(op);
@@ -254,7 +198,7 @@ public class CodeToSource {
 				int index = (operand >> 8) & 0xFF;
 				var varref = methodStack.getVariable(index);
 				int increment = operand & 0xFF;
-				str.append(varref.getName()).append(increment == 1 ? "++" : " += " + increment);
+				src.appendIndent().append(varref.getName()).append(increment == 1 ? "++" : " += " + increment).append('\n');
 			}
 			else if(opc.hasBehavior(Type.TYPE_CONVERT)) {
 				// TODO
@@ -262,10 +206,11 @@ public class CodeToSource {
 			else if(opc.hasBehavior(Type.COMPARE_NUMERIC)) {
 				// TODO
 			}
-			if(opc.hasBehavior(Type.CONDITION)) {
+			else if(opc.hasBehavior(Type.CONDITION)) {
 				OperandInfo lhs = null;
 				String rhs = null;
 
+				// extract the operands for the 'if' condition
 				if(opc.hasBehavior(Type.POP1)) {
 					lhs = methodStack.popOperand();
 
@@ -278,6 +223,7 @@ public class CodeToSource {
 						rhs = "0";
 					}
 				}
+				// all condition opcodes involve either one or two operands (as of Java 8)
 				else {
 					var val2 = methodStack.popOperand();
 					var val1 = methodStack.popOperand();
@@ -290,59 +236,27 @@ public class CodeToSource {
 					}
 				}
 
-				var condInfo = JumpConditionInfo.loadConditionFlow(opc, i, (short)operand, instr);
+				int loopIdx = CodeFlow.findContainsIfIndex(possibleLoops, i);
 
-				// standard if-statement
-				if((short)operand > 0) {
-					loops.add(condInfo);
-					conditionUnfinishedIdx = loops.size() - 1;
-					indent.indent();
-					tmp.setLength(0);
-					tmp.append(lhs.getExpression()).append(' ').append(opc.getComparisonSymbolInverse()).append(' ').append(rhs);
-					str.append("if(").append(tmp).append(") {");
+				// loop found
+				if(loopIdx >= 0) {
+					structuresInProgress.add(CodeStructureLoop.create(possibleLoops.get(loopIdx), lhs, rhs));
 				}
-				// loop with if_* at the end and jump backward
+				// if-statement
 				else {
-					int loopIdx = JumpConditionInfo.findLoopStart(i, (short)operand, loops);
-
-					if(loopIdx == -1) {
-						throw new IllegalStateException("if_* jumps backward but no loop start point found at " + i);
+					int condIdx = CodeFlow.findOpcIndex(possibleLoops, i);
+					if(condIdx >= 0) {
+						structuresInProgress.add(CodeStructureIf.create(possibleLoops.get(condIdx), lhs, rhs));
 					}
-
-					if(conditionUnfinishedIdx == loopIdx) {
-						conditionUnfinishedIdx--;
+					else {
+						throw new IllegalArgumentException("could not find condition at index " + i);
 					}
-					loops.get(loopIdx).finish();
-					indent.dedent();
-					tmp.setLength(0);
-					tmp.append(lhs.getExpression()).append(' ').append(opc.getComparisonSymbol()).append(' ').append(rhs);
-					str.append("} while(").append(tmp).append(");");
 				}
 			}
 			else if(opc == Opcodes.GOTO) {
-				int loopIdx = JumpConditionInfo.findLoopStart(i, (short)operand, loops);
-				int loopEndIdx = JumpConditionInfo.findLoopEnd(i, numOperands, (short)operand, loops);
-
-				// standard if-else statement
-				if(loopIdx > -1) {
-					if(conditionUnfinishedIdx == loopIdx) {
-						conditionUnfinishedIdx--;
-					}
-					loops.get(loopIdx).finish();
-					indent.dedent();
-					str.append('}');
-				}
-				else if(loopEndIdx > -1) {
-					loops.get(loopEndIdx).finish();
-					indent.dedent();
-					str.append('}').append('\n').append(indent).append("else ");
-				}
-				else {
-					loops.add(JumpConditionInfo.loadConditionFlow(opc, i, (short)operand, instr));
-					conditionUnfinishedIdx = loops.size() - 1;
-					indent.indent();
-					str.append("do {");
-				}
+				// handled by Type.CONDITION loop and if structures above 
+				// TODO what other actions is GOTO used for:
+				// labeled block breaks?
 			}
 			else if(opc == Opcodes.JSR || opc == Opcodes.GOTO_W || opc == Opcodes.JSR_W) {
 				// TODO: JSR, GOTO_W, & JSR_W
@@ -351,12 +265,12 @@ public class CodeToSource {
 				// TODO
 			}
 			else if(opc.hasBehavior(Type.RETURN)) {
-				str.append("return");
+				src.appendIndent().append("return");
 				if(opc != Opcodes.RETURN) {
 					var retVal = methodStack.popOperand();
-					str.append(' ').append(retVal.getExpression());
+					src.append(' ').append(retVal.getExpression());
 				}
-				str.append(';');
+				src.append(';').append('\n');
 			}
 			else if(opc == Opcodes.GETSTATIC) {
 				var fieldRef = (CONSTANT_Fieldref)cls.getConstantPoolIndex(operand).getCpObject();
@@ -366,7 +280,7 @@ public class CodeToSource {
 
 				var fieldClass = fieldRef.getClassType();
 				var fieldNameAndType = fieldRef.getNameAndType();
-				var fieldStr = fieldClass.getName().getString() + "." + fieldNameAndType.getName().getString();
+				var fieldStr = decodeBinaryClassName(fieldClass) + "." + fieldNameAndType.getName().getString();
 
 				methodStack.addOperand(new OperandInfo(fieldStr, fieldType, opc));
 			}
@@ -376,7 +290,7 @@ public class CodeToSource {
 				var fieldClass = fieldRef.getClassType();
 				var fieldNt = fieldRef.getNameAndType();
 
-				str.append(fieldClass.getName().getString()).append('.').append(fieldNt.getName().getString()).append(" = ").append(val.getExpression());
+				src.appendIndent().append(decodeBinaryClassName(fieldClass)).append('.').append(fieldNt.getName().getString()).append(" = ").append(val.getExpression()).append('\n');
 			}
 			else if(opc == Opcodes.GETFIELD) {
 				var objRef = methodStack.popOperand();
@@ -395,22 +309,23 @@ public class CodeToSource {
 				var fieldRef = (CONSTANT_Fieldref)cls.getConstantPoolIndex(operand).getCpObject();
 				var fieldNt = fieldRef.getNameAndType();
 
-				str.append(objRef.getExpression()).append('.').append(fieldNt.getName().getString()).append(" = ").append(val.getExpression());
+				src.appendIndent().append(objRef.getExpression()).append('.').append(fieldNt.getName().getString()).append(" = ").append(val.getExpression()).append('\n');
 			}
 			else if(opc.hasBehavior(Type.CP_INDEX) && opc.hasBehavior(Type.POP_UNPREDICTABLE)) {
+				StringBuilder callExpr = null;
 				if(opc == Opcodes.INVOKEVIRTUAL) {
 					var methodRef = (CONSTANT_Methodref)cls.getConstantPoolIndex(operand).getCpObject();
 					extractMethodTypesAndExpressions(methodRef, tmpList, tmpList2, tmp, methodStack);
 					String returnType = tmp.toString();
 					var objRef = methodStack.popOperand();
-					methodCallExpression(methodRef, objRef.getExpression(), tmpList, tmpList2, returnType, methodStack, opc, tmp, str);
+					callExpr = methodCallExpression(methodRef, objRef.getExpression(), tmpList, tmpList2, returnType, methodStack, opc, tmp);
 				}
 				else if(opc == Opcodes.INVOKESTATIC) {
 					var methodRef = (CONSTANT_Methodref)cls.getConstantPoolIndex(operand).getCpObject();
-					var staticClass = methodRef.getClassType().getName().getString();
+					var staticClass = methodRef.getClassType();
 					extractMethodTypesAndExpressions(methodRef, tmpList, tmpList2, tmp, methodStack);
 					String returnType = tmp.toString();
-					methodCallExpression(methodRef, staticClass, tmpList, tmpList2, returnType, methodStack, opc, tmp, str);
+					callExpr = methodCallExpression(methodRef, decodeBinaryClassName(staticClass), tmpList, tmpList2, returnType, methodStack, opc, tmp);
 				}
 				else if(opc == Opcodes.INVOKEDYNAMIC) {
 					Opcodes nextOpc = i + (numOperands < 0 ? 0 : numOperands) + 1 < instrCount ? Opcodes.get(instr[i + (numOperands < 0 ? 0 : numOperands) + 1] & 0xFF) : null;
@@ -424,11 +339,10 @@ public class CodeToSource {
 					var dynamicMethodName = dynamicRef.getNameAndType().getName().getString();
 					extractMethodTypesAndExpressions(dynamicRef, tmpList, tmpList2, tmp, methodStack);
 					String returnType = tmp.toString();
-					methodCallExpression(dynamicRef, dynamicMethodName, tmpList, tmpList2, returnType, methodStack, opc, tmp, str);
+					callExpr = methodCallExpression(dynamicRef, dynamicMethodName, tmpList, tmpList2, returnType, methodStack, opc, tmp);
 					// TODO handle lambda decompiling or at least print out what the call looks like
 					i += (numOperands < 0 ? 0 : numOperands); // skip next instruction which invokes the lambda
 					numOperands = opc.getOperandCount();
-					//instrUsed.set(i);
 					// java.lang.invoke.CallSite res = java.lang.invoke.LambdaMetafactory.metafactory(MethodHandles.lookup(), "String", java.lang.invoke.MethodType, java.lang.invoke.MethodType, java.lang.invoke.MethodHandle, java.lang.invoke.MethodType);
 				}
 				else if(opc == Opcodes.INVOKESPECIAL) {
@@ -436,7 +350,7 @@ public class CodeToSource {
 					extractMethodTypesAndExpressions(methodRef, tmpList, tmpList2, tmp, methodStack);
 					String returnType = tmp.toString();
 					var objRef = methodStack.popOperand();
-					methodCallExpression(methodRef, objRef.getExpression(), tmpList, tmpList2, returnType, methodStack, opc, tmp, str);
+					callExpr = methodCallExpression(methodRef, objRef.getExpression(), tmpList, tmpList2, returnType, methodStack, opc, tmp);
 				}
 				else if(opc == Opcodes.INVOKEINTERFACE) {
 					// TODO
@@ -444,10 +358,13 @@ public class CodeToSource {
 				else {
 					throw new IllegalArgumentException("unknown Type.POP_UNPREDICTABLE instruction " + opc);
 				}
+				if(callExpr != null) {
+					src.appendIndent().append(callExpr).append('\n');
+				}
 			}
 			else if(opc == Opcodes.NEW) {
 				var cpNewType = (CONSTANT_Class)cls.getConstantPoolIndex(operand).getCpObject();
-				methodStack.addOperand(new OperandInfo("new " + cpNewType.getName().getString().replace('/', '.'), cpNewType.getName().getString().replace('/', '.'), opc));
+				methodStack.addOperand(new OperandInfo("new " + decodeBinaryClassName(cpNewType), decodeBinaryClassName(cpNewType), opc));
 			}
 			else if(opc == Opcodes.NEWARRAY) {
 				var countRef = methodStack.popOperand();
@@ -457,40 +374,45 @@ public class CodeToSource {
 			else if(opc == Opcodes.ANEWARRAY) {
 				var countRef = methodStack.popOperand();
 				var arrayType = (CONSTANT_Class)cls.getConstantPoolIndex(operand).getCpObject();
-				var arrayTypeName = arrayType.getName().getString().replace('/', '.');
+				var arrayTypeName = decodeBinaryClassName(arrayType);
 				methodStack.addOperand(new OperandInfo("new " + arrayTypeName + '[' + countRef.getExpression() + ']', arrayTypeName + "[]", opc));
 			}
 			else if(opc == Opcodes.ARRAYLENGTH) {
 				var arrayref = methodStack.popOperand();
 				methodStack.addOperand(new OperandInfo(arrayref.getExpression() + ".length", "int", opc));
 			}
+			else if(opc == Opcodes.ALOAD) {
+				
+			}
 			else if(opc == Opcodes.ATHROW) {
 				var objectref = methodStack.popOperand();
-				str.append("throw").append(' ').append(objectref.getExpression()).append(';');
+				src.appendIndent().append("throw").append(' ').append(objectref.getExpression()).append(';').append('\n');
+			}
+			else if(opc == Opcodes.MONITORENTER) {
+				var objectref = methodStack.popOperand();
+				structuresInProgress.add(CodeStructureSynchronized.create(i, objectref));
+			}
+			else if(opc == Opcodes.MONITOREXIT) {
+				// MONITOREXIT is handled by the above if-statement
 			}
 			/*
 			TODO:
 			CHECKCAST
 			INSTANCEOF
-			MONITORENTER
-			MONITOREXIT
 			MULTIANEWARRAY
 			*/
 			else if(opc.hasBehavior(Opcodes.Type.CP_INDEX) && operand < cls.getConstantPoolCount()) {
-				str.append(" // ").append(opc.displayName()).append(' ').append(cls.getCpIndex((short)operand).getCpObject().toShortString()).append(" [").append(operand).append(']');
+				src.appendIndent().append(" // ").append(opc.displayName()).append(' ').append(cls.getCpIndex((short)operand).getCpObject().toShortString()).append(" [").append(operand).append(']').append('\n');
 			}
 			else {
-				str.append(" // ").append(opc.displayName()).append(' ').append(operand).append(" 0x").append(Integer.toHexString(operand));
-			}
-			str.append('\n');
-
-			if(curSwitch != null) {
-				if(i == curSwitch.switchEndIdx) {
-					indent.dedent();
-					str.append(indent).append('}').append('\n');
-					curSwitch = null;
+				src.appendIndent().append(" // ").append(opc.displayName()).append(' ');
+				if(numOperands > 0) {
+					src.append(operand).append(" 0x").append(Integer.toHexString(operand));
 				}
+				src.append('\n');
 			}
+
+			runEmits(structuresInProgress, opc, instr, i, operand, src);
 
 			i += (numOperands < 0 ? 0 : numOperands);
 
@@ -514,24 +436,24 @@ public class CodeToSource {
 			}
 		}
 
-		var tab = indent;
-		str.append("\n").append(tab);
+		src.append("\n");
 
-		var exception_table = code.getExceptionTable();
-		str.append("// exceptions: ").append(exception_table.length).append(" [");
-		if(exception_table.length > 0) { str.append("\n").append(tab); }
+		// TODO should finish processing any unfinished structures
+
+		src.appendIndent().append("// exceptions: ").append(exception_table.length).append(" [");
+		if(exception_table.length > 0) { src.append("\n").appendIndent(); }
 		for(int j = 0; j < exception_table.length - 1; j++) {
-			str.append("// ").append(exception_table[j]).append(",\n").append(tab);
+			src.append("// ").append(exception_table[j]).append(",\n").appendIndent();
 		}
-		if(exception_table.length > 0) { str.append("// ").append(exception_table[exception_table.length - 1]); }
+		if(exception_table.length > 0) { src.append("// ").append(exception_table[exception_table.length - 1]); src.append('\n'); }
 
 		var attributes = code.getAttributes();
-		str.append("// attributes: ").append(attributes.length).append(" [");
-		if(attributes.length > 0) { str.append("\n").append(tab); }
+		src.appendIndent().append("// attributes: ").append(attributes.length).append(" [");
+		if(attributes.length > 0) { src.append("\n").appendIndent(); }
 		for(int j = 0; j < attributes.length - 1; j++) {
-			str.append("// ").append(attributes[j]).append(",\n").append(tab);
+			src.append("// ").append(attributes[j]).append(",\n").appendIndent();
 		}
-		if(attributes.length > 0) { str.append("// ").append(attributes[attributes.length - 1]); }
+		if(attributes.length > 0) { src.append("// ").append(attributes[attributes.length - 1]); }
 	}
 
 
@@ -552,7 +474,16 @@ public class CodeToSource {
 	}
 
 
-	private static void methodCallExpression(CONSTANT_Methodref methodRef, String callObjName, List<String> parameterTypes, List<String> parameterExpressions, String returnType, MethodStack methodStack, Opcodes opc, StringBuilder tmp, StringBuilder dst) {
+	private static StringBuilder methodCallExpression(
+		CONSTANT_Methodref methodRef,
+		String callObjName,
+		List<String> parameterTypes,
+		List<String> parameterExpressions,
+		String returnType,
+		MethodStack methodStack,
+		Opcodes opc,
+		StringBuilder tmp
+	) {
 		int parameterCount = parameterExpressions.size();
 		tmp.setLength(0);
 		var methodName = methodRef.getNameAndType().getName().getString();
@@ -572,16 +503,17 @@ public class CodeToSource {
 
 		if(!"void".equals(returnType)) {
 			methodStack.addOperand(new OperandInfo(tmp.toString(), returnType, opc));
+			return null;
 		}
 		else {
-			dst.append(tmp);
+			return tmp;
 		}
 	}
 
 
-	private static void setVariable(MethodStack methodStack, int variableIdx, OperandInfo operand, Method_Info method, StringBuilder dst) {
+	private static void setVariable(MethodStack methodStack, int variableIdx, OperandInfo operand, Method_Info method, StringBuilderIndent dst) {
 		VariableInfo varInfo = methodStack.getVariableCount() > variableIdx ? methodStack.getVariable(variableIdx) : methodStack.setVariable(variableIdx, operand.getExpressionFullType(), method);
-		dst.append(varInfo.getName()).append(" = ").append(operand.getExpression()).append(';');
+		dst.appendIndent().append(varInfo.getName()).append(" = ").append(operand.getExpression()).append(';').append('\n');
 	}
 
 

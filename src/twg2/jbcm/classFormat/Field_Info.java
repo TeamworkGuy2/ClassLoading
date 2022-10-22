@@ -9,13 +9,14 @@ import java.io.ObjectOutput;
 
 import twg2.jbcm.classFormat.attributes.Attribute_Type;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format <code>Field</code> info type
  * @author TeamworkGuy2
  * @since 2013-7-7
  */
-public class Field_Info implements Externalizable, ReadWritable {
+public class Field_Info implements Externalizable, ReadWritable, CpIndexChangeable {
 	/** Declared public; may be accessed from outside its package. */
 	public static final int ACC_PUBLIC = 0x0001;
 	/** Declared private; usable only within the defining class. */
@@ -85,10 +86,10 @@ public class Field_Info implements Externalizable, ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(descriptor_index, oldIndex, newIndex);
-		IndexUtility.indexChange(attributes, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(name_index);
+		indexChanger.indexChange(descriptor_index);
+		indexChanger.indexChange(attributes);
 	}
 
 

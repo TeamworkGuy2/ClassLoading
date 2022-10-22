@@ -2,4 +2,4 @@ Run the following command to compile java files in the source\classLoading folde
 This folder is for various java files used to test dynamic reloading that cannot be part of the eclipse project's source/build path.
 Navigate to the classpath folder, then run the following command:
 
-"C:\Program Files\Java\jdk1.8.0_112\bin\javac" -sourcepath source -classpath C:\Users\TeamworkGuy2\Documents\Java\Projects\ClassLoading\res source\classLoading\*.java source\classLoading\base\*.java source\classLoading\load\*.java -d destination
+"C:\Program Files\Java\jdk1.8.0_25\bin\javac" -sourcepath source -classpath C:\Users\TeamworkGuy2\Documents\Java\Projects\ClassLoading\res source\classLoading\*.java source\classLoading\base\*.java source\classLoading\load\*.java -d destination

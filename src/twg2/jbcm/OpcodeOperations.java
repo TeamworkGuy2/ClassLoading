@@ -1,6 +1,6 @@
 package twg2.jbcm;
 
-import twg2.jbcm.modify.CpIndexChanger;
+import twg2.jbcm.modify.CodeCpIndexChanger;
 import twg2.jbcm.modify.CodeOffsetChanger;
 import twg2.jbcm.modify.CodeOffsetGetter;
 
@@ -9,16 +9,16 @@ import twg2.jbcm.modify.CodeOffsetGetter;
  * @since 2014-4-20
  */
 public class OpcodeOperations {
-	public static final OpcodeOperations EMPTY = new OpcodeOperations(CodeOffsetGetter.RETURN_ZERO, CpIndexChanger.NO_OP, CodeOffsetChanger.NO_OP);
+	public static final OpcodeOperations EMPTY = new OpcodeOperations(CodeOffsetGetter.RETURN_ZERO, CodeCpIndexChanger.NO_OP, CodeOffsetChanger.NO_OP);
 
 	private CodeOffsetGetter codeOffsetGetter;
-	private CpIndexChanger cpIndexChanger;
+	private CodeCpIndexChanger codeCpIndexChanger;
 	private CodeOffsetChanger codeOffsetChanger;
 
 
-	public OpcodeOperations(CodeOffsetGetter codeOffsetGetter, CpIndexChanger cpIndexChanger, CodeOffsetChanger codeOffsetChanger) {
+	public OpcodeOperations(CodeOffsetGetter codeOffsetGetter, CodeCpIndexChanger codeCpIndexChanger, CodeOffsetChanger codeOffsetChanger) {
 		this.codeOffsetGetter = codeOffsetGetter;
-		this.cpIndexChanger = cpIndexChanger;
+		this.codeCpIndexChanger = codeCpIndexChanger;
 		this.codeOffsetChanger = codeOffsetChanger;
 	}
 
@@ -28,8 +28,8 @@ public class OpcodeOperations {
 	}
 
 
-	public CpIndexChanger getCpIndexModifier() {
-		return cpIndexChanger;
+	public CodeCpIndexChanger getCpIndexModifier() {
+		return codeCpIndexChanger;
 	}
 
 

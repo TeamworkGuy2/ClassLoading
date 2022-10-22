@@ -10,7 +10,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>LineNumberTable</code>
  * @author TeamworkGuy2
@@ -54,9 +55,9 @@ public class LineNumberTable implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(line_number_table, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(line_number_table);
 	}
 
 
@@ -104,7 +105,7 @@ public class LineNumberTable implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2013-7-7
 	 */
-	public static class LineNumberPoint implements ReadWritable {
+	public static class LineNumberPoint implements ReadWritable, CpIndexChangeable {
 		Code parent;
 		/** Each entry in the line_number_table array indicates that the line number in the original source file changes at
 		 * a given point in the code array. Each line_number_table entry must contain the following two items:
@@ -126,7 +127,7 @@ public class LineNumberTable implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 

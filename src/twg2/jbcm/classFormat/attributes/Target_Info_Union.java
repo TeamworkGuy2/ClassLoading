@@ -5,7 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import twg2.jbcm.classFormat.ReadWritable;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A container class for all {@link Target_Info} classes
  * which are a member type in {@link TypeAnnotation}.<br/>
@@ -47,7 +47,7 @@ public final class Target_Info_Union {
 		byte type_parameter_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -86,7 +86,7 @@ public final class Target_Info_Union {
 		short supertype_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -131,7 +131,7 @@ public final class Target_Info_Union {
 		byte bound_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -170,7 +170,7 @@ public final class Target_Info_Union {
 		;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -209,7 +209,7 @@ public final class Target_Info_Union {
 		byte formal_parameter_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -245,7 +245,7 @@ public final class Target_Info_Union {
 		short throws_type_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -303,8 +303,8 @@ public final class Target_Info_Union {
 		Localvar_Target_Table_Entry[] table;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(table, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(table);
 		}
 
 		@Override
@@ -364,7 +364,7 @@ public final class Target_Info_Union {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 
@@ -412,7 +412,7 @@ public final class Target_Info_Union {
 		short exception_table_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -449,7 +449,7 @@ public final class Target_Info_Union {
 		short offset;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override
@@ -497,7 +497,7 @@ public final class Target_Info_Union {
 		byte type_argument_index;
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
+		public void changeCpIndex(CpIndexChanger indexChanger) {
 		}
 
 		@Override

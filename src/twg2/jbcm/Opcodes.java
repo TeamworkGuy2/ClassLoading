@@ -497,11 +497,12 @@ public enum Opcodes {
 
 
 	/**
-	 * @param opcode the opcode to compare to this opcode
+	 * @param opcode the opcode to compare to this opcode,
+	 * can be a signed byte value between [-128, 127] or an int value [0, 255]
 	 * @return true if this opcode equals the specified opcode value
 	 */
 	public boolean is(int opcode) {
-		return this.opcode == opcode;
+		return this.opcode == (opcode & 0xFF);
 	}
 
 
@@ -585,11 +586,12 @@ public enum Opcodes {
 
 
 	/** Return the opcode with the specified opcode value
-	 * @param opcode the opcode value to lookup
+	 * @param opcode the opcode value to lookup,
+	 * can be a signed byte value between [-128, 127] or an int value [0, 255]
 	 * @return the instruction corresponding to the specified opcode
 	 */
 	public static Opcodes get(int opcode) {
-		Opcodes op = OpcodeMap.opcodes[opcode];
+		Opcodes op = OpcodeMap.opcodes[(opcode & 0xFF)];
 		return op != null ? op : Opcodes.UNDEFINED;
 	}
 

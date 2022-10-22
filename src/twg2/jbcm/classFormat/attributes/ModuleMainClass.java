@@ -10,7 +10,7 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>Module</code>
  * @author TeamworkGuy2
@@ -57,8 +57,8 @@ public class ModuleMainClass implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(main_class_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(main_class_index);
 	}
 
 

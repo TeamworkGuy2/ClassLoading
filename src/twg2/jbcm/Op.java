@@ -1,6 +1,6 @@
 package twg2.jbcm;
 
-import twg2.jbcm.modify.CpIndexChanger;
+import twg2.jbcm.modify.CodeCpIndexChanger;
 import twg2.jbcm.modify.CodeOffsetChanger;
 import twg2.jbcm.modify.CodeOffsetGetter;
 
@@ -10,13 +10,13 @@ import twg2.jbcm.modify.CodeOffsetGetter;
  */
 public class Op {
 	private CodeOffsetGetter offsetGetter;
-	private CpIndexChanger cpIndex;
+	private CodeCpIndexChanger cpIndex;
 	private CodeOffsetChanger codeOffset;
 
 	private Op() {}
 
 
-	public Op add(CpIndexChanger cpIndex) {
+	public Op add(CodeCpIndexChanger cpIndex) {
 		this.cpIndex = cpIndex;
 		// detect if index change implementation is also an offset getter and save it for that purpose
 		if(cpIndex instanceof CodeOffsetGetter) {
@@ -42,7 +42,7 @@ public class Op {
 	}
 
 
-	public static Op of(CpIndexChanger cpIndex) {
+	public static Op of(CodeCpIndexChanger cpIndex) {
 		Op op = new Op();
 		return op.add(cpIndex);
 	}

@@ -1,10 +1,9 @@
 package twg2.jbcm.ir;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import twg2.collections.primitiveCollections.IntArrayList;
-import twg2.jbcm.CodeFlow;
 import twg2.jbcm.Opcodes;
 
 /** Contains the beginning and end opcodes and targets for a goto/if condition pair
@@ -12,100 +11,154 @@ import twg2.jbcm.Opcodes;
  * @since 2020-08-15
  */
 public class JumpConditionInfo {
-	private final Opcodes opc;
-	private final int opcIdx;
-	private final int targetOffset;
-	private final IntArrayList codeFlow;
-	public final int codeFlowMaxIndex;
-	private boolean finished;
 
+	/**
+	 * @author TeamworkGuy2
+	 * @since 2022-09-30
+	 */
+	public enum UsageHint {
+		FOR_OR_WHILE_LOOP(16),
+		DO_WHILE_LOOP(16),
+		IF(1),
+		IF_WITHIN_LOOP_AND_WITH_LOOP_ENDS(1);
 
-	public JumpConditionInfo(Opcodes opc, int opcIdx, int targetOffset, int codeFlowMaxIndex, IntArrayList codeFlow) {
-		this.opc = opc;
-		this.opcIdx = opcIdx;
-		this.targetOffset = targetOffset;
-		this.codeFlowMaxIndex = codeFlowMaxIndex;
-		this.codeFlow = codeFlow;
+		/** Usage hint type/category:
+		 * 1 = IF/ELSE<br>
+		 * 16 = LOOP<br>
+		 */
+		private final byte type;
+
+		UsageHint(int type) {
+			this.type = (byte)type;
+		}
+
+		public static boolean isLoop(UsageHint hint) {
+			return hint != null && hint.type == 16;
+		}
 	}
 
 
+	/** Sort jump conditions based on lower index and greatest range between lower and upper.<br>
+	 * 1. the lower of the {@link JumpConditionInfo#getLowerIndex()}<br>
+	 * 2. the greater of the {@link JumpConditionInfo#getUpperIndex()}<br>
+	 */
+	public static final Comparator<? super JumpConditionInfo> LOWER_INDEX_SORTER = (JumpConditionInfo o1, JumpConditionInfo o2) -> {
+		int lowerIdxDiff = o1.getLowerIndex() - o2.getLowerIndex();
+		return lowerIdxDiff == 0 ? o2.getUpperIndex() - o1.getUpperIndex() : lowerIdxDiff;
+	};
+
+	public final Opcodes opc;
+	public final int opcIdx;
+	public final int targetOffset;
+	/** It is not always clear which IF_* instruction belongs to a loop (since loops are commonly detected via backward jumps (GOTOs).
+	 * This value is a best guess of the code index of an IF_* instruction that belongs to the setup code for this loop.
+	 * This index will be between the {@link #getTargetIndex()} and {@code opcIdx}
+	 */
+	public final int potentialIfIndex;
+	/** If {@code usageHint ==}{@link UsageHint#IF_WITHIN_LOOP_AND_WITH_LOOP_ENDS} then this index should be set with the
+	 * end index of the loop that this condition resides within. This condition and the loop end at the same index.
+	 */
+	public final int loopEndIndexForIf;
+	/** A {@link UsageHint} best guess as to the structural usage of this condition within the code, i.e. whether it is a
+	 * {@code for} loop or <code>do { } while()</code> loop or {@code if} statement.
+	 */
+	public final UsageHint usageHint;
+
+
+	public JumpConditionInfo(Opcodes opc, int opcIdx, int targetOffset,
+			int potentialIfIndex, int loopEndIndexForIf, UsageHint usageHint) {
+		this.opc = opc;
+		this.opcIdx = opcIdx;
+		this.targetOffset = targetOffset;
+		this.potentialIfIndex = potentialIfIndex;
+		this.loopEndIndexForIf = loopEndIndexForIf;
+		this.usageHint = usageHint;
+	}
+
+
+	/** The jump cause opcode, i.e. GOTO or IF*
+	 */
 	public Opcodes getOpcode() {
 		return opc;
 	}
 
 
+	/**
+	 * @return the index of the opcode within it's method code array
+	 */
 	public int getOpcodeIndex() {
 		return opcIdx;
 	}
 
 
-	public IntArrayList getCodeFlow() {
-		return codeFlow;
-	}
-
-
+	/** The jump target index in the method's code array
+	 */
 	public int getTargetIndex() {
 		return opcIdx + targetOffset;
 	}
 
 
-	public void finish() {
-		this.finished = true;
-	}
-
-
-	public boolean isFinished() {
-		return finished;
-	}
-
-
-	/** Analyze a switch case and return helpful information about it's bytecode layout.
-	 * Used by {@link #loadTableSwitch(int, byte[], List, AtomicReference) and {@link #loadLookupSwitch(int, byte[], List, AtomicReference)}
-	 * @param caseMatch the value to match for this case in the switch
-	 * @param targetIdx the target {@code instr} index at which the case's code begins
-	 * @param instr the method bytecode array
-	 * @return the analyzed switch information
+	/** Get the lower index of {@link #getOpcodeIndex()} and {@link #getTargetIndex()}.<br>
+	 * For most if-statements the opcode index is lower.<br>
+	 * For most loops the target index is lower.
 	 */
-	public static JumpConditionInfo loadConditionFlow(Opcodes opc, int idx, int targetOffset, byte[] instr) {
-		// analyze code flow path
-		var condFlowPath = new IntArrayList();
-		condFlowPath.add(~idx);
-		CodeFlow.getFlowPaths(idx, instr, condFlowPath);
+	public int getLowerIndex() {
+		return opcIdx + (targetOffset < 0 ? targetOffset : 0);
+	}
+
+
+	/** Get the higher index of {@link #getOpcodeIndex()} and {@link #getTargetIndex()}.<br>
+	 * For most if-statements the jump/target index index is higher.<br>
+	 * For most loops the opcode index is higher.
+	 */
+	public int getUpperIndex() {
+		return opcIdx + (targetOffset >= 0 ? targetOffset : 0);
+	}
+
+
+	/** Create a clone of this object with a new {@link #potentialIfIndex}
+	 * @param potentialIfIndex potential index of the IF_* opcode at the beginning of this loop, if it is a loop, otherwise -1
+	 */
+	public JumpConditionInfo withPotentialIfIndex(int index) {
+		return new JumpConditionInfo(opc, opcIdx, targetOffset, index, loopEndIndexForIf, usageHint);
+	}
+
+
+	public JumpConditionInfo withLoopEndIndexForIf(int loopEndTarget) {
+		return new JumpConditionInfo(opc, opcIdx, targetOffset, potentialIfIndex, loopEndTarget, UsageHint.IF_WITHIN_LOOP_AND_WITH_LOOP_ENDS);
+	}
+
+
+	/** Create a clone of this object with a new {@link #usageHint}
+	 */
+	public JumpConditionInfo withUsageHint(UsageHint hint) {
+		return new JumpConditionInfo(opc, opcIdx, targetOffset, potentialIfIndex, loopEndIndexForIf, hint);
+	}
+
+
+	@Override
+	public String toString() {
+		return "condition at " + this.opcIdx + " (" + this.opc + ")";
+	}
+
+
+	/** Analyze the flow of a sub-section of code and return information about its bytecode layout.<br>
+	 * Used by {@link #loadTableSwitch(int, byte[], List, AtomicReference) and {@link #loadLookupSwitch(int, byte[], List, AtomicReference)}
+	 * @param opc the instruction op-code
+	 * @param idx the {@code instr} index at which the {@code opc} instruction is located 
+	 * @param targetOffset offset from {@code idx} into the {@code instr} array that this condition points to
+	 * @param code the method bytecode array
+	 * @param usageHint a best guess hint of the jump condition's usage
+	 * @return the analyzed code flow information
+	 */
+	public static JumpConditionInfo loadConditionFlow(Opcodes opc, int idx, int targetOffset, byte[] code, UsageHint usageHint) {
+		// follow an array of jump points found in the code
+		//var condFlowPath = CodeFlow.getFlowPaths(code, idx);
 
 		// potential end index (probably redundant once code flow is working)
-		var maxCodeFlowIndex = CodeFlow.maxIndex(condFlowPath);
+		//var maxCodeFlowIndex = CodeFlow.maxIndex(condFlowPath);
 
-		return new JumpConditionInfo(opc, idx, targetOffset, maxCodeFlowIndex, condFlowPath);
-	}
-
-
-	public static int findLoopStart(int curIdx, int jumpRelative, List<JumpConditionInfo> loops) {
-		// Loops are generally compiled using a GOTO and an IF_* instruction
-		// form 1: [..., GOTO <setup_if[0]>, instructions[], setup_if[], IF_* <instructions[0]>, ...]
-		if(jumpRelative < 0) {
-			var jumpToIdx = curIdx + jumpRelative - 3; // GOTO has a 2 byte operand so -3 is the GOTO instruction index right before the jump destination (which is the first instruction in a loop)
-			for(int i = loops.size() - 1; i >= 0; i--) {
-				var cond = loops.get(i);
-				if(cond.getOpcodeIndex() == jumpToIdx) {
-					return i;
-				}
-			}
-		}
-		return -1;
-	}
-
-
-	public static int findLoopEnd(int curIdx, int numOperands, int jumpRelative, List<JumpConditionInfo> loops) {
-		if(jumpRelative > 0) {
-			var instAfterJumpIdx = curIdx + numOperands + 1;
-			for(int i = loops.size() - 1; i >= 0; i--) {
-				var cond = loops.get(i);
-				if(cond.getTargetIndex() == instAfterJumpIdx) {
-					return i;
-				}
-			}
-		}
-		return -1;
+		return new JumpConditionInfo(opc, idx, targetOffset, -1, -1, usageHint);
 	}
 
 }

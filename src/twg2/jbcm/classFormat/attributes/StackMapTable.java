@@ -10,7 +10,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>StackMapTable</code>
  * @author TeamworkGuy2
@@ -62,9 +63,9 @@ public class StackMapTable implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(entries, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(entries);
 	}
 
 
@@ -111,7 +112,7 @@ public class StackMapTable implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2013-10-6
 	 */
-	public static class StackMapFrame implements ReadWritable {
+	public static class StackMapFrame implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/**
 		 * 0-63 = same_frame
@@ -154,8 +155,8 @@ public class StackMapTable implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(stack, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(stack);
 		}
 
 

@@ -5,9 +5,13 @@ package twg2.jbcm.classFormat;
  * @since 2013-7-7
  */
 public class Settings {
-	public static boolean debug = true;
+	public static boolean debug = false;
 	public static boolean cpTagRead = true;
 	public static boolean checkCPIndex = true;
+	/** Whether to validate the tag type of each constant pool entry read, without a valid tag constant pool entries
+	 * cannot be loaded and two bytes of data assumed to contain the constant pool entry info are skipped
+	 */
+	public static boolean checkCPTag = true;
 	public static boolean checkCPExpectedType = true;
 	public static boolean checkAttributeName = true;
 	public static boolean readAttributeName = false;
@@ -15,30 +19,6 @@ public class Settings {
 
 	private Settings() {
 		throw new AssertionError("may not instantiate Settings");
-	}
-
-	public static boolean debug() {
-		return debug;
-	}
-
-	public static boolean cpTagRead() {
-		return cpTagRead;
-	}
-
-	public static boolean checkCPIndex() {
-		return checkCPIndex;
-	}
-
-	public static boolean checkCPExpectedType() {
-		return checkCPExpectedType;
-	}
-
-	public static boolean checkAttributeName() {
-		return checkAttributeName;
-	}
-
-	public static boolean readAttributeName() {
-		return readAttributeName;
 	}
 
 }

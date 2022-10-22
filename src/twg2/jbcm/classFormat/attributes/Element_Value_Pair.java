@@ -8,14 +8,15 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Annotation subtype of type <code>Element_Value_Pair</code>.
  * Represents a single element-value pair in an annotation structure.
  * @author TeamworkGuy2
  * @since 2013-12-3
  */
-public class Element_Value_Pair implements ReadWritable {
+public class Element_Value_Pair implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The value of the element_name_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info structure (§4.4.7)
@@ -35,9 +36,9 @@ public class Element_Value_Pair implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(element_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(value, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(element_name_index);
+		indexChanger.indexChange(value);
 	}
 
 

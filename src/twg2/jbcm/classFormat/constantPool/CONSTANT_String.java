@@ -7,7 +7,7 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** Java class file format constant pool <code>String</code> info type.<br>
  * Constant value = 8, class version = 45.3, Java SE = 1.0.2
@@ -37,8 +37,8 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(string_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(string_index);
 	}
 
 
@@ -77,7 +77,7 @@ public class CONSTANT_String implements CONSTANT_CP_Info {
 
 	@Override
 	public String toString() {
-		return "String(8, index=" + string_index + ", string=" + string_index.getCpObject() + ")";
+		return "String(8, string=" + string_index.getCpObject() + ")";
 	}
 
 }

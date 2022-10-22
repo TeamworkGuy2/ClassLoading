@@ -10,7 +10,8 @@ import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type {@code LocalVariableTable}
  * @author TeamworkGuy2
@@ -56,9 +57,9 @@ public class LocalVariableTypeTable implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(local_variable_type_table, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(local_variable_type_table);
 	}
 
 
@@ -106,7 +107,7 @@ public class LocalVariableTypeTable implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2013-12-3
 	 */
-	public static class LocalVariableTypePoint implements ReadWritable {
+	public static class LocalVariableTypePoint implements ReadWritable, CpIndexChangeable {
 		Code parent;
 		/** Each entry in the local_variable_type_table array indicates a range of code array offsets within which a local
 		 * variable has a value. It also indicates the index into the local variable array of the current frame at which
@@ -143,9 +144,9 @@ public class LocalVariableTypeTable implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(name_index, oldIndex, newIndex);
-			IndexUtility.indexChange(signature_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(name_index);
+			indexChanger.indexChange(signature_index);
 		}
 
 

@@ -14,7 +14,8 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Module;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Package;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>Module</code>
  * @author TeamworkGuy2
@@ -114,15 +115,15 @@ public class Module implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(module_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(module_version_index, oldIndex, newIndex);
-		IndexUtility.indexChange(requires, oldIndex, newIndex);
-		IndexUtility.indexChange(exports, oldIndex, newIndex);
-		IndexUtility.indexChange(opens, oldIndex, newIndex);
-		IndexUtility.indexChange(uses_index, oldIndex, newIndex);
-		IndexUtility.indexChange(provides, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(module_name_index);
+		indexChanger.indexChange(module_version_index);
+		indexChanger.indexChange(requires);
+		indexChanger.indexChange(exports);
+		indexChanger.indexChange(opens);
+		indexChanger.indexChange(uses_index);
+		indexChanger.indexChange(provides);
 	}
 
 
@@ -273,7 +274,7 @@ public class Module implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2017-12-22
 	 */
-	public static class ModuleRequire implements ReadWritable {
+	public static class ModuleRequire implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/** The value of the requires_index item must be a valid index into the constant_pool table. The constant_pool entry
 		 * at that index must be a CONSTANT_Module_info structure denoting a module on which the current module depends.
@@ -302,9 +303,9 @@ public class Module implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(requires_index, oldIndex, newIndex);
-			IndexUtility.indexChange(requires_version_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(requires_index);
+			indexChanger.indexChange(requires_version_index);
 		}
 
 
@@ -343,7 +344,7 @@ public class Module implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2017-12-22
 	 */
-	public static class ModuleExport implements ReadWritable {
+	public static class ModuleExport implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/** The value of the exports_index item must be a valid index into the constant_pool table. The constant_pool entry
 		 * at that index must be a CONSTANT_Package_info structure representing a package exported by the current module.
@@ -376,9 +377,9 @@ public class Module implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(exports_index, oldIndex, newIndex);
-			IndexUtility.indexChange(exports_to_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(exports_index);
+			indexChanger.indexChange(exports_to_index);
 		}
 
 
@@ -428,7 +429,7 @@ public class Module implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2017-12-22
 	 */
-	public static class ModuleOpen implements ReadWritable {
+	public static class ModuleOpen implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/** The value of the opens_index item must be a valid index into the constant_pool table. The constant_pool entry
 		 * at that index must be a CONSTANT_Package_info structure representing a package opened by the current module.
@@ -461,9 +462,9 @@ public class Module implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(opens_index, oldIndex, newIndex);
-			IndexUtility.indexChange(opens_to_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(opens_index);
+			indexChanger.indexChange(opens_to_index);
 		}
 
 
@@ -513,7 +514,7 @@ public class Module implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2017-12-22
 	 */
-	public static class ModuleProvide implements ReadWritable {
+	public static class ModuleProvide implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/** The value of the provides_index item must be a valid index into the constant_pool table. The constant_pool entry
 		 * at that index must be a CONSTANT_Class_info structure representing a service interface for which the current module provides a service implementation.
@@ -538,9 +539,9 @@ public class Module implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(provides_index, oldIndex, newIndex);
-			IndexUtility.indexChange(provides_to_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(provides_index);
+			indexChanger.indexChange(provides_to_index);
 		}
 
 

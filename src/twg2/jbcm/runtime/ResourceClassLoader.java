@@ -1,4 +1,4 @@
-package twg2.jbcm.runtimeLoading;
+package twg2.jbcm.runtime;
 
 /** An interface representing a custom resource classloader
  * @author TeamworkGuy2

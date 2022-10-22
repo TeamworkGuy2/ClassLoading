@@ -7,7 +7,7 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 import twg2.jbcm.modify.TypeUtility;
 
 /** Java class file format constant pool <code>Interface method reference</code> info type.<br>
@@ -46,9 +46,9 @@ public class CONSTANT_InterfaceMethodref implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(class_index, oldIndex, newIndex);
-		IndexUtility.indexChange(name_and_type_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(class_index);
+		indexChanger.indexChange(name_and_type_index);
 	}
 
 
@@ -105,7 +105,11 @@ public class CONSTANT_InterfaceMethodref implements CONSTANT_CP_Info {
 	public String toString() {
 		CONSTANT_Class clazz = class_index.getCpObject();
 		CONSTANT_NameAndType method = name_and_type_index.getCpObject();
-		return "InterfaceMethodref(11, class=" + clazz.getName() + ", name=" + method.getName() + ", type=" + method.getDescriptor() + ")";
+		// null checks for malformed classes, for example, when a constant pool item references another item ahead of
+		// it in the constant pool that hasn't been parsed yet
+		return "InterfaceMethodref(11, class=" + (clazz != null ? clazz.getName() : class_index) +
+				", name=" + (method != null ? method.getName() : name_and_type_index) +
+				", type=" + (method != null ? method.getDescriptor() : null) + ")";
 	}
 
 }

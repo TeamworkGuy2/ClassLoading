@@ -47,6 +47,15 @@ public abstract class ConstantPoolExtensions {
 	}
 
 
+	// TODO debugging
+	public CpIndex<CONSTANT_CP_Info> getCpIndex(int index, boolean allowZero) {
+		if(index == 0) {
+			return null;
+		}
+		return getCpIndex(index);
+	}
+
+
 	public CpIndex<CONSTANT_CP_Info> getCpIndex(int index) {
 		if(index > 0 && index < getConstantPoolCount()) {
 			CpIndex<CONSTANT_CP_Info> result = getConstantPoolIndex(index);

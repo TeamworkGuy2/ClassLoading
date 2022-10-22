@@ -11,7 +11,8 @@ import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>InnerClasses</code>
  * @author TeamworkGuy2
@@ -57,9 +58,9 @@ public class InnerClasses implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(classes, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(classes);
 	}
 
 
@@ -109,7 +110,7 @@ public class InnerClasses implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2013-7-7
 	 */
-	public static class InnerClassPoint implements ReadWritable {
+	public static class InnerClassPoint implements ReadWritable, CpIndexChangeable {
 		ClassFile resolver;
 		/** Every CONSTANT_Class_info entry in the constant_pool table which represents a class or interface C that is not
 		 * a package member must have exactly one corresponding entry in the classes array.
@@ -163,10 +164,10 @@ public class InnerClasses implements Attribute_Type {
 
 
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(inner_class_info_index, oldIndex, newIndex);
-			IndexUtility.indexChange(outer_class_info_index, oldIndex, newIndex);
-			IndexUtility.indexChange(inner_name_index, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(inner_class_info_index);
+			indexChanger.indexChange(outer_class_info_index);
+			indexChanger.indexChange(inner_name_index);
 		}
 
 

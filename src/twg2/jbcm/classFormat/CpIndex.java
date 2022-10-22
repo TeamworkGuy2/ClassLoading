@@ -5,7 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A constant pool index and type.<br/>
  * The data type of the index this object points to can be lazily initialized by using the
@@ -13,7 +14,7 @@ import twg2.jbcm.modify.IndexUtility;
  * @author TeamworkGuy2
  * @since 2014-4-20
  */
-public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable {
+public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable, CpIndexChangeable {
 	private static final Class<?> VALID_TYPE = CONSTANT_CP_Info.class;
 	private boolean initialized;
 	private Class<T> clas;
@@ -58,7 +59,7 @@ public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable {
 
 
 	final void initialize(Class<T> clas) {
-		if(initialized == true) {
+		if(initialized) {
 			throw new IllegalStateException("cannot reinitialize CpIndex");
 		}
 		if(clas == null) { throw new NullPointerException("constant pool item class type cannot be null"); }
@@ -106,8 +107,8 @@ public final class CpIndex<T extends CONSTANT_CP_Info> implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		this.index = IndexUtility.indexChange((short)this.index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		this.index = indexChanger.indexChange((short)this.index);
 	}
 
 

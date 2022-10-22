@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import twg2.jbcm.CodeUtility;
 import twg2.jbcm.Opcodes;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.ClassFileAttributes;
@@ -12,7 +13,8 @@ import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Attribute of type <code>Code</code>
  * @author TeamworkGuy2
@@ -89,10 +91,10 @@ public class Code implements Attribute_Type {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(attribute_name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(exception_table, oldIndex, newIndex);
-		IndexUtility.indexChange(attributes, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(attribute_name_index);
+		indexChanger.indexChange(exception_table);
+		indexChanger.indexChange(attributes);
 	}
 
 
@@ -125,6 +127,8 @@ public class Code implements Attribute_Type {
 		return max_locals;
 	}
 
+
+	// TODO these modify operations should clone this Code attribute
 
 	public void setCode(byte[] instructions) {
 		byte[] oldCode = this.code;
@@ -168,24 +172,6 @@ public class Code implements Attribute_Type {
 			if(LocalVariableTable.ATTRIBUTE_NAME.equals(attrib.getAttributeName())) {
 				((LocalVariableTable)attrib).getAttributeOffsetModifier().changeOffset(offset, length, shift);
 			}
-		}
-	}
-
-
-	/** Set this code block's max stack size
-	 * @param maxStackSize the size of this code's stack
-	 */
-	public void setStackSize(short maxStackSize) {
-		this.max_stack = maxStackSize;
-	}
-
-
-	/** Ensure that this code block's max stack size is atleast the specified size
-	 * @param maxStackSize the minimum size of this code's stack
-	 */
-	public void ensureStackSize(short maxStackSize) {
-		if(maxStackSize > this.max_stack) {
-			this.max_stack = maxStackSize;
 		}
 	}
 
@@ -237,30 +223,30 @@ public class Code implements Attribute_Type {
 	@Override
 	public String toString() {
 		StringBuilder dst = new StringBuilder();
-		toClassString("\t", dst);
+		toClassCodeString("\t", dst);
 		return dst.toString();
 	}
 
 
 	// approximately black-boxed based on Eclipse class file view
-	public void toClassString(String tab, StringBuilder str) {
+	public void toClassCodeString(String tab, StringBuilder str) {
 		str.append(ATTRIBUTE_NAME).append("(stack: ").append(max_stack)
 			.append(", locals: ").append(max_locals).append(",\n").append(tab)
 			.append("code: ").append(code_length).append(" [\n");
 
 		for(int i = 0; i < code_length; i++) {
-			Opcodes opc = Opcodes.get(code[i] & 0xFF);
+			Opcodes opc = Opcodes.get(code[i]);
 			boolean isWide = false;
 			int numOperands = opc.getOperandCount();
 			// Read following bytes of code and convert them to an operand depending on the current instruction
-			int operand = loadOperands(numOperands, code, i);
+			int operand = CodeUtility.loadOperands(numOperands, code, i);
 			// Special handling for instructions with unpredictable byte code lengths
 			if(numOperands == Opcodes.Const.UNPREDICTABLE) {
 				if(Opcodes.WIDE.is(code[i])) {
 					// TODO doesn't properly read extra wide operand bytes
 					isWide = true;
 					i++; // because wide instructions are wrapped around other instructions
-					opc = Opcodes.get(code[i] & 0xFF);
+					opc = Opcodes.get(code[i]);
 					numOperands = opc.getOperandCount();
 				}
 				else if(Opcodes.TABLESWITCH.is(code[i])) {
@@ -311,14 +297,6 @@ public class Code implements Attribute_Type {
 	}
 
 
-	private static int loadOperands(int numOperands, byte[] code, int index) {
-		return (numOperands > 3 ? (((code[index+1] & 0xFF) << 24) | ((code[index+2] & 0xFF) << 16) | ((code[index+3] & 0xFF) << 8) | (code[index+4] & 0xFF)) :
-			(numOperands > 2 ? (((code[index+1] & 0xFF) << 16) | ((code[index+2] & 0xFF) << 8) | (code[index+3] & 0xFF)) :
-				(numOperands > 1 ? (((code[index+1] & 0xFF) << 8) | (code[index+2] & 0xFF)) :
-					(numOperands > 0 ? ((code[index+1] & 0xFF)) : -1))));
-	}
-
-
 	private static String instructionIndex(int instPtr) {
 		if(instPtr < 10) {
 			return "  " + instPtr + "  ";
@@ -337,9 +315,9 @@ public class Code implements Attribute_Type {
 	 * @author TeamworkGuy2
 	 * @since 2013-7-7
 	 */
-	public static class ExceptionPoint implements ReadWritable {
+	public static class ExceptionPoint implements ReadWritable, CpIndexChangeable {
 		Code parent;
-		/* Each entry in the exception_table array describes one exception handler in the code array. The order of the
+		/** Each entry in the exception_table array describes one exception handler in the code array. The order of the
 		 * handlers in the exception_table array is significant. See Section 3.10 for more details.
 		 * Each exception_table entry contains the following four items:
 		 * start_pc, end_pc
@@ -372,9 +350,49 @@ public class Code implements Attribute_Type {
 		}
 
 
+		/**
+		 * @see #parent
+		 */
+		public Code getParent() {
+			return parent;
+		}
+
+
+		/**
+		 * @see #start_pc
+		 */
+		public short getStartPc() {
+			return start_pc;
+		}
+
+
+		/**
+		 * @see #end_pc
+		 */
+		public short getEndPc() {
+			return end_pc;
+		}
+
+
+		/**
+		 * @see #handler_pc
+		 */
+		public short getHandlerPc() {
+			return handler_pc;
+		}
+
+
+		/**
+		 * @see #catch_type
+		 */
+		public CpIndex<CONSTANT_Class> getCatchType() {
+			return catch_type;
+		}
+
+
 		@Override
-		public void changeCpIndex(short oldIndex, short newIndex) {
-			IndexUtility.indexChange(catch_type, oldIndex, newIndex);
+		public void changeCpIndex(CpIndexChanger indexChanger) {
+			indexChanger.indexChange(catch_type);
 		}
 
 
@@ -398,7 +416,7 @@ public class Code implements Attribute_Type {
 
 		@Override
 		public String toString() {
-			return "Exception(start=" + start_pc + ", end=" + end_pc + ", handler=" + handler_pc + ", catch_type=" + (catch_type.getIndex() > 0 ? catch_type.getCpObject() : "finally") + ")";
+			return "Exception(start=" + start_pc + ", end=" + end_pc + ", handler=" + handler_pc + ", catch_type=" + (catch_type != null && catch_type.getIndex() > 0 ? catch_type.getCpObject() : "finally") + ")";
 		}
 
 	}

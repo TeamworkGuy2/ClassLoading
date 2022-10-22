@@ -90,9 +90,7 @@ public class SwitchFlow {
 	 */
 	public static SwitchCase loadSwitchCase(int caseMatch, int targetIdx, byte[] instr) {
 		// analyze code flow path
-		var caseFlowPath = new IntArrayList();
-		caseFlowPath.add(~targetIdx);
-		CodeFlow.getFlowPaths(targetIdx, instr, caseFlowPath);
+		var caseFlowPath = CodeFlow.getFlowPaths(instr, targetIdx);
 
 		// potential end index (probably redundant once code flow is working)
 		var maxCodeFlowIndex = CodeFlow.maxIndex(caseFlowPath);
@@ -175,7 +173,7 @@ public class SwitchFlow {
 				return false;
 			}
 			prevEnd = caseObj.codeFlowMaxIndex;
-			var endOpc = Opcodes.get(instr[prevEnd] & 0xFF);
+			var endOpc = Opcodes.get(instr[prevEnd]);
 			var operands = endOpc.getOperandCount();
 			prevOperands = operands;
 		}

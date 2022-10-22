@@ -7,7 +7,7 @@ import java.io.IOException;
 import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.Settings;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChanger;
 import twg2.jbcm.modify.TypeUtility;
 
 /** Java class file format constant pool <code>NameAndType</code> info type.<br>
@@ -44,9 +44,9 @@ public class CONSTANT_NameAndType implements CONSTANT_CP_Info {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(name_index, oldIndex, newIndex);
-		IndexUtility.indexChange(descriptor_index, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(name_index);
+		indexChanger.indexChange(descriptor_index);
 	}
 
 

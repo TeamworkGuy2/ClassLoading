@@ -2,9 +2,12 @@ package twg2.jbcm.main;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.nio.file.FileSystem;
@@ -17,20 +20,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import twg2.jbcm.classFormat.ClassFile;
+import twg2.jbcm.classFormat.CpIndex;
+import twg2.jbcm.classFormat.Settings;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_CP_Info;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Class;
+import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
 import twg2.jbcm.dynamicModification.SimpleInterface;
-import twg2.jbcm.runtimeLoading.CompileSource;
+import twg2.jbcm.modify.FindCpIndexUsage;
+import twg2.jbcm.runtime.ClassLoaders;
+import twg2.jbcm.runtime.CompileSource;
 import twg2.jbcm.toSource.ClassFileToSource;
 import twg2.jbcm.toSource.SourceWriter;
 
-
 public class UsageCliMain {
-	static final String a = "twg2/jbcm/main/test/UnitTest";
-	static final String b = "UnitTest-Other";
-
 
 	/** Print the class file format data about the specified class
 	 * @param file the class file to print the internal data of
@@ -61,34 +67,35 @@ public class UsageCliMain {
 		int innerLoops = 100;
 		long timeTest = 0;
 		long timeBase = 0;
-		long temp = 0;
+		long start = 0;
 		for(int i = 0; i < loops; i++) {
-			temp = System.nanoTime();
+			start = System.nanoTime();
 			for(int a = 0; a < innerLoops; a++) {
 				base.callTest();
 			}
-			timeBase += (System.nanoTime() - temp);
+			timeBase += (System.nanoTime() - start);
 
-			temp = System.nanoTime();
+			start = System.nanoTime();
 			for(int a = 0; a < innerLoops; a++) {
 				test.callTest();
 			}
-			timeTest += (System.nanoTime() - temp);
+			timeTest += (System.nanoTime() - start);
 		}
 		System.out.println("Time base: " + timeBase + ", base=" + base.getCount());
 		System.out.println("Time test: " + timeTest + ", test=" + test.getCount());
 	}
 
 
-	public static void interactiveClassLoad() {
-		Scanner in = new Scanner(System.in);
+	public static void interactiveClassLoad(String... args) {
+		var nextLineGetter = createLineGetter(args, System.in);
 		List<ClassFile> classFiles = new ArrayList<>();
 		int errorCount = 0;
 		int errorMax = 10;
 		String str = null;
+		System.out.println("Class file manipulator:");
 		do {
 			try {
-				displayMenuGetUserInput(in, classFiles);
+				displayMenuGetUserInput(nextLineGetter, classFiles);
 			} catch (IOException e) {
 				errorCount++;
 				if(errorCount > errorMax) { break; }
@@ -98,29 +105,36 @@ public class UsageCliMain {
 	}
 
 
-	private static void displayMenuGetUserInput(Scanner in, List<ClassFile> classFiles) throws IOException {
+	private static void displayMenuGetUserInput(Supplier<String> userInputNextLine, List<ClassFile> classFiles) throws IOException {
+		var nextLine = userInputNextLine;
 		FileSystem fs = FileSystems.getDefault();
+		String appPath = ClassLoaders.getApplicationPathString();
+		String path = new File(appPath).getParent() + "/res/destination";
 		String classpath = System.getProperty("user.dir");
 		if(!classpath.endsWith("\\") && !classpath.endsWith("/")) {
 			classpath += "/";
 		}
 
-		System.out.print("Class file manipulator " + (classFiles.size() > 0 ? "(" + classFiles.size() + " loaded)" : "") +
-				", options ('classpath', 'printInfo', 'printClass', 'decompile', 'dependencies', 'load', 'modify', 'clear'): ");
-		String input = in.nextLine();
+		System.out.print((classFiles.size() > 0 ? "(" + classFiles.size() + " loaded), " : "") +
+				"options ('classpath', 'printInfo', 'printClass', 'decompile', 'dependencies', 'load', 'modify', 'run', 'clear', 'save'): ");
+		String input = nextLine.get();
 		ClassFile cls = null;
 		SourceWriter writer = null;
+		Object[] args = new String[0];
 
 		switch(input) {
+		// classpath
 		case "classpath":
 			System.out.print("enter classpath to use for 'load' commands: ");
-			input = in.nextLine();
+			input = nextLine.get();
 			classpath = input;
+			break;
+		// decompile
 		case "decompile":
 			String methodFilter = null;
 			if(classFiles.size() < 1) {
 				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print source: ");
-				input = in.nextLine();
+				input = nextLine.get();
 				// allow file names like "\bin\twg2\jbcm\modify\TypeUtility.class isPrimitive()
 				if(input.endsWith("()")) {
 					int spaceIdx = input.lastIndexOf(' ');
@@ -142,10 +156,11 @@ public class UsageCliMain {
 			}
 			System.out.println(writer.toString());
 			break;
+		// printClass
 		case "printClass":
 			if(classFiles.size() < 1) {
 				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print class: ");
-				input = in.nextLine();
+				input = nextLine.get();
 				File file = getClassPath(fs, classpath, input).toFile();
 				cls = ClassFile.load(file);
 			}
@@ -156,10 +171,11 @@ public class UsageCliMain {
 			ClassFileToSource.toSource(cls, writer, false);
 			System.out.println(writer.toString());
 			break;
+		// printInfo
 		case "printInfo":
 			if(classFiles.size() < 1) {
 				System.out.print("enter file name (relative to '" + classpath + "' or absolute) to print: ");
-				input = in.nextLine();
+				input = nextLine.get();
 				File file = getClassPath(fs, classpath, input).toFile();
 				cls = ClassFile.load(file);
 			}
@@ -168,9 +184,10 @@ public class UsageCliMain {
 			}
 			cls.print(System.out);
 			break;
+		// load
 		case "load":
 			System.out.print("enter file/path name (relative to '" + classpath + "' or absolute) to load: ");
-			input = in.nextLine();
+			input = nextLine.get();
 			File file = getClassPath(fs, classpath, input).toFile();
 			List<File> files;
 			if(file.isDirectory()) {
@@ -180,28 +197,95 @@ public class UsageCliMain {
 				files = Arrays.asList(file);
 			}
 			for(int i = 0, sz = files.size(); i < sz; i++) {
-				classFiles.add(ClassFile.load(files.get(i)));
+				cls = ClassFile.load(files.get(i));
+				classFiles.add(cls);
 			}
 			System.out.println(files.size() + " class files loaded");
 			break;
+		// dependencies
 		case "dependencies":
 			System.out.print("enter dependency name to search for (optional) or nothing to print all dependencies: ");
-			input = in.nextLine();
+			input = nextLine.get();
 			for(int i = 0, sz = classFiles.size(); i < sz; i++) {
 				printDeps(classFiles.get(i), input, System.out);
 			}
 			break;
+		// modify
 		case "modify":
-			System.out.print("enter modification (currently not implemented): ");
-			input = in.nextLine();
-			// TODO modify(classFiles.get(0), input);
-			System.out.println("ERROR: 'modify' is not yet implemented");
+			System.out.println("Modification Options: ");
+			System.out.println("1. 'removeUnusedCPs' - remove constant pool entries");
+			System.out.println("2. 'replaceCP [# | \"string\"] \"replacement\"' - replace constant pool string");
+			System.out.print("Choice: ");
+			input = nextLine.get();
+			cls = classFiles.size() > 0 ? classFiles.get(0) : null;
+			if(input.equals("removeUnusedCPs")) {
+				var unusedIndexes = FindCpIndexUsage.findUnusedIndexes(cls);
+				System.out.println("unused indexes: " + unusedIndexes);
+				//var removedIndexes = cls.removeUnusedCpIndexes();
+				//System.out.println("Removed unused constant pool entries: " + removedIndexes.toString());
+			}
+			else if(input.startsWith("replaceCP")) {
+				var strs = input.split(" \"");
+				CpIndex<CONSTANT_Utf8> strCp;
+				if(strs.length == 3) {
+					strCp = cls.findConstantPoolString(strs[1]);
+				}
+				else {
+					int idx = Integer.parseInt(strs[0].split(" ")[1]);
+					strCp = cls.getCheckCpIndex(idx, CONSTANT_Utf8.class);
+				}
+				if(strCp != null) {
+					var utfStr = new CONSTANT_Utf8(cls);
+					utfStr.setString(strs[1].endsWith("\"") ? strs[1].substring(0, strs[1].length() - 1) : strs[1]);
+					strCp.setCpObject(utfStr);
+					cls.setConstantPool(strCp.getIndex(), strCp.getCpObject());
+				}
+				else {
+					System.err.println("Could not find constant pool string \"" + strs[1] + "\"");
+				}
+			}
+			else {
+				System.err.println("ERROR: unknown modification option '" + input + "'");
+			}
 			break;
+		// run
+		case "run":
+			System.out.print("Load a class, example 'classLoading.base.Test.main()' or 'classLoading.Reload.main()': ");
+			input = nextLine.get();
+			String[] classAndMethod = splitClassAndMethod(input);
+			System.out.println("running '" + classAndMethod[0] + "." + classAndMethod[1] + "()...");
+			var t = ClassLoaders.callClassMethod(path, classAndMethod[0], classAndMethod[1], null, (Object)args);
+			try {
+				t.thread.join();
+			} catch (InterruptedException e) {
+				System.err.println("Error waiting for thread: " + e.getLocalizedMessage());
+			}
+			break;
+		// save
+		case "save":
+			cls = classFiles.get(0);
+			DataOutputStream out = new DataOutputStream(new FileOutputStream(cls.getSource().replace(".class", "-modified.class")));
+			cls.writeData(out);
+			out.close();
+			break;
+		// clear
 		case "clear":
 			classFiles.clear();
 			break;
 		default:
 			break;
+		}
+	}
+
+
+	private static Supplier<String> createLineGetter(String[] lines, InputStream in) {
+		if(lines != null && lines.length > 0) {
+			var idx = new AtomicInteger(0);
+			return () -> lines.length > idx.get() ? lines[idx.getAndIncrement()] : null;
+		}
+		else {
+			var inScanner = new Scanner(in);
+			return () -> inScanner.nextLine();
 		}
 	}
 
@@ -243,17 +327,30 @@ public class UsageCliMain {
 	}
 
 
-	private static byte[] compileSourceToBytecode(String javaSrc) throws MalformedURLException, ClassNotFoundException {
+	/** Splits a string in the format 'class.path.and.Name.methodName()' into
+	 * two strings, the full class name and the method name,
+	 * like ['class.path.and.Name', 'methodName']
+	 */
+	private static String[] splitClassAndMethod(String input) {
+		int lastDot = input.lastIndexOf('.');
+		String method = input.substring(lastDot + 1, input.length() - 2);
+		String fullClass = input.substring(0, lastDot);
+		return new String[] { fullClass, method };
+	}
+
+
+	private static ClassFile compileAndLoad(String javaSrc) throws MalformedURLException, ClassNotFoundException {
 		try {
 			File tmpFile = new File("res/tmp/src/CompilerTemp.java");
 			Files.write(tmpFile.toPath(), javaSrc.getBytes("UTF-8"), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-			File sourceFilesPath = new File("res/tmp/src");
-			String classPath = new File("res/tmp/src").getAbsolutePath();
-			File destinationClassPath = new File("res/tmp/bin");
+			File sourceDir = new File("res/tmp/src");
+			String classPath = sourceDir.getAbsolutePath();
+			File destinationDir = new File("res/tmp/bin");
 
-			CompileSource.compile(true, tmpFile, sourceFilesPath, classPath, destinationClassPath);
+			//CompileSource.compile(CompileSource.JAVA_1_8_COMPILE, tmpFile, sourceDir, classPath, destinationDir);
+			CompileSource.compileUsingEclipseEcj(tmpFile, sourceDir, classPath, destinationDir);
 
-			var bytecode = Files.readAllBytes(new File("res/tmp/bin/CompilerTemp.class").toPath());
+			var bytecode = ClassFile.load(new File("res/tmp/bin/CompilerTemp.class"));
 
 			tmpFile.delete();
 
@@ -264,31 +361,12 @@ public class UsageCliMain {
 	}
 
 
-	private static void compileSourceFileToClass(File srcJavaFile, File dstClassFile) throws ClassNotFoundException, IOException {
-		File entryFile = new File("res/tmp/src/twg2/compileTest/Hello.java");
-		File sourceFilesPath = new File("res/tmp/src");
-		String classPath = new File("res/tmp/src/twg2/compileTest").getAbsolutePath();
-		File destinationClassPath = new File("res/tmp/bin");
-
-		CompileSource.compile(true, entryFile, sourceFilesPath, classPath, destinationClassPath);
-
-		RuntimeReloadMain reload = new RuntimeReloadMain();
-		reload.loadRun("res/tmp/bin", "twg2.compileTest.Hello", "run", (String[])null);
-
-		//Runnable thing = (Runnable)classes[0].newInstance();
-		//thing.run();
-	}
-
-
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		var codes = new int[] { 0, 1, 5, 122, Integer.MAX_VALUE - 1, Integer.MAX_VALUE };
-		for(var code : codes) {
-			System.out.println(code + " (" + (~code) + ") = " + ~(~code));
-		}
+		Settings.debug = true;
 
-		interactiveClassLoad();
+		interactiveClassLoad(new String[] { "decompile", "res/destination/classLoading/RunnableThing.class" });
 
-		// compileSourceToClass();
+		// compileAndLoad();
 
 		//File file = new File("bin/twg2.jbcm.classFormat/test/UnitTest.class");
 		//File file = new File("C:/Users/TeamworkGuy2/Documents/Java/Projects/ClassLoading/bin/twg2.jbcm.classFormat/Field_Info.class");

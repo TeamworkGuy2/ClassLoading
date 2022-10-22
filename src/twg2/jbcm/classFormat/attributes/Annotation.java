@@ -8,13 +8,14 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.CpIndex;
 import twg2.jbcm.classFormat.ReadWritable;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Annotation subtype of type <code>Annotation</code>
  * @author TeamworkGuy2
  * @since 2013-12-3
  */
-public class Annotation implements ReadWritable {
+public class Annotation implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The value of the type_index item must be a valid index into the constant_pool table.
 	 * The constant_pool entry at that index must be a CONSTANT_Utf8_info (§4.4.7) structure
@@ -42,9 +43,9 @@ public class Annotation implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		IndexUtility.indexChange(type_index, oldIndex, newIndex);
-		IndexUtility.indexChange(element_value_pairs, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		indexChanger.indexChange(type_index);
+		indexChanger.indexChange(element_value_pairs);
 	}
 
 

@@ -4,6 +4,7 @@ import twg2.jbcm.classFormat.ClassFile;
 import twg2.jbcm.classFormat.Field_Info;
 import twg2.jbcm.classFormat.Method_Info;
 import twg2.jbcm.ir.MethodStack;
+import twg2.jbcm.modify.TypeUtility;
 
 /**
  * @author TeamworkGuy2
@@ -29,7 +30,7 @@ public class ClassFileToSource {
 		dst.accessModifierClass(cls.getAccessFlags()).space().keyword("class").space();
 		dst.identifier(className);
 		// extends
-		String superClassName = cls.getSuperClassIndex().getCpObject().getName().getString().replace('/', '.');
+		String superClassName = TypeUtility.decodeBinaryClassName(cls.getSuperClassIndex().getCpObject());
 		if(!superClassName.equals("java.lang.Object")) {
 			dst.space().keyword("extends").space().identifier(superClassName);
 		}

@@ -13,14 +13,15 @@ import twg2.jbcm.classFormat.constantPool.CONSTANT_Float;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Integer;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Long;
 import twg2.jbcm.classFormat.constantPool.CONSTANT_Utf8;
-import twg2.jbcm.modify.IndexUtility;
+import twg2.jbcm.modify.CpIndexChangeable;
+import twg2.jbcm.modify.CpIndexChanger;
 
 /** A Java class file format Annotation subtype of type <code>element_value</code>
  * TODO class needs cleaning up, is currently using multiple fields for a union type (I think, 2014-3-19)
  * @author TeamworkGuy2
  * @since 2013-12-3
  */
-public class Element_Value implements ReadWritable {
+public class Element_Value implements ReadWritable, CpIndexChangeable {
 	ClassFile resolver;
 	/** The tag item indicates the type of this annotation element-value pair.
 	 * The letters B, C, D, F, I, J, S, and Z indicate a primitive type. These letters are
@@ -96,13 +97,13 @@ public class Element_Value implements ReadWritable {
 
 
 	@Override
-	public void changeCpIndex(short oldIndex, short newIndex) {
-		if(const_value_index != null) IndexUtility.indexChange(const_value_index, oldIndex, newIndex);
-		if(const_name_index != null) IndexUtility.indexChange(const_name_index, oldIndex, newIndex);
-		if(type_name_index != null) IndexUtility.indexChange(type_name_index, oldIndex, newIndex);
-		if(class_info_index != null) IndexUtility.indexChange(class_info_index, oldIndex, newIndex);
-		if(annotation_value != null) IndexUtility.indexChange(annotation_value, oldIndex, newIndex);
-		if(values != null) IndexUtility.indexChange(values, oldIndex, newIndex);
+	public void changeCpIndex(CpIndexChanger indexChanger) {
+		if(const_value_index != null) indexChanger.indexChange(const_value_index);
+		if(const_name_index != null) indexChanger.indexChange(const_name_index);
+		if(type_name_index != null) indexChanger.indexChange(type_name_index);
+		if(class_info_index != null) indexChanger.indexChange(class_info_index);
+		if(annotation_value != null) indexChanger.indexChange(annotation_value);
+		if(values != null) indexChanger.indexChange(values);
 	}
 
 

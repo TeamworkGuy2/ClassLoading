@@ -1,8 +1,11 @@
-package twg2.jbcm.runtimeLoading;
+package twg2.jbcm.runtime;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.security.CodeSource;
+import java.security.Principal;
+import java.security.ProtectionDomain;
 import java.util.HashMap;
 
 import twg2.jbcm.IoUtility;
@@ -14,17 +17,21 @@ import twg2.jbcm.IoUtility;
 public class MemoryClassLoader extends ClassLoader implements ResourceClassLoader {
 	private File customPath;
 
+
 	private class CustomClass {
 		private final String className;
 		private final byte[] data;
+		private final ProtectionDomain protectionDomain;
 		private boolean isDefined;
 		private Class<?> definedClass;
 
-		CustomClass(String className, byte[] b) {
+		CustomClass(String className, byte[] b, ProtectionDomain protectionDomain) {
 			this.className = className;
 			this.data = b;
+			this.protectionDomain = protectionDomain;
 		}
 	}
+
 
 	/** {@link sun.misc.Launcher$AppClassLoader}
 	 * {@link java.lang.ClassLoader#loadClass()}
@@ -72,7 +79,7 @@ public class MemoryClassLoader extends ClassLoader implements ResourceClassLoade
 			if(customPath != null) {
 				try {
 					byte[] classBytes = IoUtility.loadBytes(new File(customPath, name.replace('.', '/') + ".class"));
-					CustomClass customClass = new CustomClass(name, classBytes);
+					CustomClass customClass = new CustomClass(name, classBytes, newProtectionDomain());
 					memoryClasses.put(name, customClass);
 					return setupCustomClass(customClass);
 				} catch (MalformedURLException e) {
@@ -94,7 +101,7 @@ public class MemoryClassLoader extends ClassLoader implements ResourceClassLoade
 	private final Class<?> setupCustomClass(CustomClass classData) {
 		if(classData.isDefined == false) {
 			System.out.println("Define class: " + classData.className);
-			Class<?> clas = super.defineClass(classData.className, classData.data, 0, classData.data.length);
+			Class<?> clas = super.defineClass(classData.className, classData.data, 0, classData.data.length, classData.protectionDomain);
 			classData.isDefined = true;
 			classData.definedClass = clas;
 			return clas;
@@ -108,7 +115,13 @@ public class MemoryClassLoader extends ClassLoader implements ResourceClassLoade
 
 	@Override
 	public void addClassByteCode(String name, byte[] b) {
-		memoryClasses.put(name, new CustomClass(name, b));
+		memoryClasses.put(name, new CustomClass(name, b, newProtectionDomain()));
+	}
+
+
+	private ProtectionDomain newProtectionDomain() {
+		CodeSource codeSource = this.getClass().getProtectionDomain().getCodeSource();
+		return new ProtectionDomain(codeSource, null, this, new Principal[0]);
 	}
 
 }
